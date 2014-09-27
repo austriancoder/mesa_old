@@ -59,7 +59,7 @@ bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resou
 
     DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocating tile status of size %i", resource, rt_ts_size);
     struct etna_bo *rt_ts = 0;
-    if(unlikely((rt_ts = etna_bo_new(priv->dev, rt_ts_size, DRM_ETNA_GEM_TYPE_TS)) == NULL))
+    if(unlikely((rt_ts = etna_bo_new(priv->dev, rt_ts_size, 0 /* TODO FLAGS*/)) == NULL))
     {
         BUG("Problem allocating tile status for resource");
         return false;
@@ -148,7 +148,7 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     }
 
     /* multi tiled formats */
-    if ((priv->dev->chip.pixel_pipes > 1) && !(templat->bind & PIPE_BIND_SAMPLER_VIEW))
+    if ((priv->specs.pixel_pipes > 1) && !(templat->bind & PIPE_BIND_SAMPLER_VIEW))
     {
         if (layout == ETNA_LAYOUT_TILED)
             layout = ETNA_LAYOUT_MULTI_TILED;
@@ -177,8 +177,8 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     unsigned paddingX = 0, paddingY = 0;
     unsigned halign = TEXTURE_HALIGN_FOUR;
     etna_layout_multiple(layout,
-            priv->dev->chip.pixel_pipes,
-            (templat->bind & PIPE_BIND_SAMPLER_VIEW) && !VIV_FEATURE(priv->dev, chipMinorFeatures1, TEXTURE_HALIGN),
+            priv->specs.pixel_pipes,
+            (templat->bind & PIPE_BIND_SAMPLER_VIEW) && !VIV_FEATURE(priv, chipMinorFeatures1, TEXTURE_HALIGN),
             &paddingX, &paddingY, &halign);
     assert(paddingX && paddingY);
 
@@ -212,10 +212,10 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
 
     /* determine memory type */
     uint32_t flags = 0; /* XXX DRM_ETNA_GEM_CACHE_xxx */
-    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i), %i layers, of format %s, size %08x flags %08x, memtype %i",
+    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i), %i layers, of format %s, size %08x flags %08x",
             resource,
             templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->array_size, util_format_name(templat->format),
-            offset, templat->bind, memtype);
+            offset, templat->bind);
 
     struct etna_bo *bo = 0;
     if(unlikely((bo = etna_bo_new(priv->dev, offset, flags)) == NULL))
@@ -234,9 +234,11 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     resource->ts_bo = 0; /* TS is only created when first bound to surface */
     pipe_reference_init(&resource->base.reference, 1);
 
+#if 0 /* TODO */
     /* calculate pipe addresses */
     resource->pipe_addr[0] = etna_bo_gpu_address(resource->bo) + resource->levels[0].offset;
     resource->pipe_addr[1] = etna_bo_gpu_address(resource->bo) + resource->levels[0].offset + (resource->levels[0].size / 2);
+#endif
 
     if(DBG_ENABLED(ETNA_DBG_ZERO))
     {
