@@ -70,16 +70,14 @@ void etna_compile_rs_state(struct etna_screen *restrict screen, struct compiled_
     else if (screen->specs.pixel_pipes == 2)
     {
         assert((rs->height&7) == 0); /* GPU hangs happen if height not 8-aligned */
-#if 0 /* TODO */
         if (source_multi)
         {
-            SET_STATE(RS_PIPE_SOURCE_ADDR[1], rs->source[1]);
+            SET_STATE(RS_PIPE_SOURCE[1], rs->source[1]);
         }
         if (dest_multi)
         {
-            SET_STATE(RS_PIPE_DEST_ADDR[1], rs->dest[1]);
+            SET_STATE(RS_PIPE_DEST[1], rs->dest[1]);
         }
-#endif
         SET_STATE(RS_WINDOW_SIZE, VIVS_RS_WINDOW_SIZE_WIDTH(rs->width) | VIVS_RS_WINDOW_SIZE_HEIGHT(rs->height / 2));
     }
     SET_STATE(RS_PIPE_OFFSET[0], VIVS_RS_PIPE_OFFSET_X(0) | VIVS_RS_PIPE_OFFSET_Y(0));

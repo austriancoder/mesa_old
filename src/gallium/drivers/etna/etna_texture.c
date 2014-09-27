@@ -96,7 +96,6 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
                                                  struct pipe_resource *texture,
                                                  const struct pipe_sampler_view *templat)
 {
-    struct etna_context *priv = etna_context(pipe);
     struct etna_screen *screen = etna_screen(pipe->screen);
     struct etna_sampler_view *sv = CALLOC_STRUCT(etna_sampler_view);
     sv->base = *templat;
@@ -130,12 +129,14 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
             VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(etna_log2_fixp55(res->base.height0));
 
     /* Set up levels-of-detail */
-#if 0 /* TODO */
     for(int lod=0; lod<=res->base.last_level; ++lod)
     {
-        cs->TE_SAMPLER_LOD_ADDR[lod] = etna_bo_gpu_address(res->bo) + res->levels[lod].offset;
+        struct etna_reloc r = {
+            .bo = res->bo,
+            .offset = res->levels[lod].offset,
+        };
+        cs->TE_SAMPLER_LOD_ADDR[lod] = r;
     }
-#endif
     cs->min_lod = sv->base.u.tex.first_level << 5;
     cs->max_lod = MIN2(sv->base.u.tex.last_level, res->base.last_level) << 5;
 

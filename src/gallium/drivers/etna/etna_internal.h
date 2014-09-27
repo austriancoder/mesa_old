@@ -24,6 +24,7 @@
 #ifndef H_ETNA_INTERNAL
 #define H_ETNA_INTERNAL
 
+#include <etnaviv_drmif.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "state.xml.h"
@@ -204,7 +205,7 @@ struct compiled_sampler_view
     uint32_t TE_SAMPLER_CONFIG1;
     uint32_t TE_SAMPLER_SIZE;
     uint32_t TE_SAMPLER_LOG_SIZE;
-    uint32_t TE_SAMPLER_LOD_ADDR[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
+    struct etna_reloc TE_SAMPLER_LOD_ADDR[VIVS_TE_SAMPLER_LOD_ADDR__LEN];
     unsigned min_lod, max_lod; /* 5.5 fixp */
 };
 
@@ -215,13 +216,13 @@ struct compiled_framebuffer_state
     uint32_t GL_MULTI_SAMPLE_CONFIG;
     uint32_t PE_COLOR_FORMAT;
     uint32_t PE_DEPTH_CONFIG;
-    uint32_t PE_DEPTH_ADDR;
-    uint32_t PE_PIPE_DEPTH_ADDR[2];
+    struct etna_reloc PE_DEPTH_ADDR;
+    struct etna_reloc PE_PIPE_DEPTH_ADDR[2];
     uint32_t PE_DEPTH_STRIDE;
     uint32_t PE_HDEPTH_CONTROL;
     uint32_t PE_DEPTH_NORMALIZE;
-    uint32_t PE_COLOR_ADDR;
-    uint32_t PE_PIPE_COLOR_ADDR[2];
+    struct etna_reloc PE_COLOR_ADDR;
+    struct etna_reloc PE_PIPE_COLOR_ADDR[2];
     uint32_t PE_COLOR_STRIDE;
     uint32_t SE_SCISSOR_LEFT; // fixp, restricted by scissor state *if* enabled in rasterizer state
     uint32_t SE_SCISSOR_TOP; // fixp
@@ -232,11 +233,11 @@ struct compiled_framebuffer_state
     uint32_t RA_CENTROID_TABLE[VIVS_RA_CENTROID_TABLE__LEN];
     uint32_t TS_MEM_CONFIG;
     uint32_t TS_DEPTH_CLEAR_VALUE;
-    uint32_t TS_DEPTH_STATUS_BASE;
-    uint32_t TS_DEPTH_SURFACE_BASE;
+    struct etna_reloc TS_DEPTH_STATUS_BASE;
+    struct etna_reloc TS_DEPTH_SURFACE_BASE;
     uint32_t TS_COLOR_CLEAR_VALUE;
-    uint32_t TS_COLOR_STATUS_BASE;
-    uint32_t TS_COLOR_SURFACE_BASE;
+    struct etna_reloc TS_COLOR_STATUS_BASE;
+    struct etna_reloc TS_COLOR_SURFACE_BASE;
     bool msaa_mode; // adds input (and possible temp) to PS
 };
 
@@ -251,14 +252,14 @@ struct compiled_vertex_elements_state
 struct compiled_set_vertex_buffer
 {
     uint32_t FE_VERTEX_STREAM_CONTROL;
-    uint32_t FE_VERTEX_STREAM_BASE_ADDR;
+    struct etna_reloc FE_VERTEX_STREAM_BASE_ADDR;
 };
 
 /* Compiled context->set_index_buffer result */
 struct compiled_set_index_buffer
 {
     uint32_t FE_INDEX_STREAM_CONTROL;
-    uint32_t FE_INDEX_STREAM_BASE_ADDR;
+    struct etna_reloc FE_INDEX_STREAM_BASE_ADDR;
 };
 
 /* Compiled linked VS+PS shader state */
@@ -379,12 +380,12 @@ struct etna_3d_state
     uint32_t /*014A0*/ PE_STENCIL_CONFIG_EXT;
     uint32_t /*014A4*/ PE_LOGIC_OP;
     uint32_t /*014A8*/ PE_DITHER[2];
-    uint32_t /*01460*/ PE_PIPE_COLOR_ADDR[VIVS_PE_PIPE__LEN];
-    uint32_t /*01480*/ PE_PIPE_DEPTH_ADDR[VIVS_PE_PIPE__LEN];
+    struct etna_reloc /*01460*/ PE_PIPE_COLOR_ADDR[VIVS_PE_PIPE__LEN];
+    struct etna_reloc /*01480*/ PE_PIPE_DEPTH_ADDR[VIVS_PE_PIPE__LEN];
 
     uint32_t /*01654*/ TS_MEM_CONFIG;
-    uint32_t /*01658*/ TS_COLOR_STATUS_BASE;
-    uint32_t /*0165C*/ TS_COLOR_SURFACE_BASE;
+    struct etna_reloc /*01658*/ TS_COLOR_STATUS_BASE;
+    struct etna_reloc /*0165C*/ TS_COLOR_SURFACE_BASE;
     uint32_t /*01660*/ TS_COLOR_CLEAR_VALUE;
     uint32_t /*01664*/ TS_DEPTH_STATUS_BASE;
     uint32_t /*01668*/ TS_DEPTH_SURFACE_BASE;

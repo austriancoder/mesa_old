@@ -454,11 +454,21 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
         ts_mem_config |= VIVS_TS_MEM_CONFIG_MSAA | translate_msaa_format(rt_resource->base.format, false);
     if(rt_resource->levels[level].ts_size)
     {
-#if 0 /* TODO */
+#if 0
+        struct etna_reloc r0 = {
+            .bo = rt_resource->ts_bo,
+            .offset = rt_resource->levels[level].ts_offset
+        };
+
+        struct etna_reloc r1 = {
+            .bo = rt_resource->bo,
+            .offset = rt_resource->levels[level].offset
+        };
+
         etna_set_state_multi(ectx->stream, VIVS_TS_MEM_CONFIG, 4, (uint32_t[]) {
           ectx->gpu3d.TS_MEM_CONFIG = VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR | ts_mem_config,
-          ectx->gpu3d.TS_COLOR_STATUS_BASE = etna_bo_gpu_address(rt_resource->ts_bo) + rt_resource->levels[level].ts_offset,
-          ectx->gpu3d.TS_COLOR_SURFACE_BASE = etna_bo_gpu_address(rt_resource->bo) + rt_resource->levels[level].offset,
+          ectx->gpu3d.TS_COLOR_STATUS_BASE = r0,
+          ectx->gpu3d.TS_COLOR_SURFACE_BASE = r1,
           ectx->gpu3d.TS_COLOR_CLEAR_VALUE = rt_resource->levels[level].clear_value
           });
 #endif
@@ -494,7 +504,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                 .width = drawable->width * msaa_xscale,
                 .height = drawable->height * msaa_yscale
             });
-    etna_submit_rs_state(ectx->stream, &copy_to_screen);
+    etna_submit_rs_state(ectx, &copy_to_screen);
 #if 0 /* TODO */
     DBG_F(ETNA_DBG_FRAME_MSGS,
             "Queued RS command to flush screen from %08x to %08x stride=%08x width=%i height=%i, ctx %p",

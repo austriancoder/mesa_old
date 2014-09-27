@@ -54,17 +54,17 @@ struct rs_state
 struct compiled_rs_state
 {
     uint32_t RS_CONFIG;
-    struct etna_reloc source[2];
+    struct etna_reloc RS_SOURCE[2];
     uint32_t RS_SOURCE_STRIDE;
-    struct etna_reloc dest[2];
+    struct etna_reloc RS_DEST[2];
     uint32_t RS_DEST_STRIDE;
     uint32_t RS_WINDOW_SIZE;
     uint32_t RS_DITHER[2];
     uint32_t RS_CLEAR_CONTROL;
     uint32_t RS_FILL_VALUE[4];
     uint32_t RS_EXTRA_CONFIG;
-    struct etna_reloc pipe_source[2];
-    struct etna_reloc pipe_dest[2];
+    struct etna_reloc RS_PIPE_SOURCE[2];
+    struct etna_reloc RS_PIPE_DEST[2];
     uint32_t RS_PIPE_OFFSET[2];         /* TODO is there hardware with more then 2 pipes? */
 };
 
