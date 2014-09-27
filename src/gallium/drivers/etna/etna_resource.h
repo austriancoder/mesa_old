@@ -26,8 +26,9 @@
 #define H_ETNA_RESOURCE
 
 #include "pipe/p_state.h"
+#include "etna_screen.h"
 
-struct pipe_screen;
+
 struct etna_resource;
 
 void etna_resource_touch(struct pipe_context *pipe, struct pipe_resource *resource_);

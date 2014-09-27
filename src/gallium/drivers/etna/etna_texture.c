@@ -65,7 +65,7 @@ static void etna_pipe_bind_sampler_states (struct pipe_context * pipe,
                                            unsigned num_samplers, void **samplers)
 {
     /* bind fragment sampler */
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     priv->dirty_bits |= ETNA_STATE_SAMPLERS;
     priv->num_fragment_samplers = num_samplers;
     for(int idx=0; idx<num_samplers; ++idx)
@@ -94,7 +94,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
                                                  struct pipe_resource *texture,
                                                  const struct pipe_sampler_view *templat)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     struct etna_sampler_view *sv = CALLOC_STRUCT(etna_sampler_view);
     sv->base = *templat;
     sv->base.context = pipe;
@@ -166,7 +166,7 @@ static void etna_pipe_set_sampler_views(struct pipe_context *pipe,
                                         struct pipe_sampler_view **info)
 {
     /* fragment sampler */
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     unsigned idx;
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_fragment_sampler_views = num_views;
@@ -198,7 +198,7 @@ static void etna_pipe_set_sampler_views(struct pipe_context *pipe,
 
 static void etna_pipe_texture_barrier(struct pipe_context *pipe)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     /* clear color and texture cache to make sure that texture unit reads
      * what has been written
      */

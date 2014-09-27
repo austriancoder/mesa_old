@@ -28,16 +28,35 @@
 #include "pipe/p_screen.h"
 #include "os/os_thread.h"
 
-struct viv_conn;
 struct etna_bo;
 
-#define ETNA_SCREEN_NAME_LEN (64)
-/* Gallium screen structure for etna driver.
+/* Enum with indices for each of the feature words */
+enum viv_features_word
+{
+    viv_chipFeatures = 0,
+    viv_chipMinorFeatures0 = 1,
+    viv_chipMinorFeatures1 = 2,
+    viv_chipMinorFeatures2 = 3,
+    viv_chipMinorFeatures3 = 4,
+    VIV_FEATURES_WORD_COUNT /* Must be last */
+};
+
+/** Convenience macro to probe features from state.xml.h:
+ * VIV_FEATURE(chipFeatures, FAST_CLEAR)
+ * VIV_FEATURE(chipMinorFeatures1, AUTO_DISABLE)
  */
+#define VIV_FEATURE(screen, word, feature) ((screen->features[viv_ ## word] & (word ## _ ## feature))!=0)
+
 struct etna_screen {
     struct pipe_screen base;
-    char name[ETNA_SCREEN_NAME_LEN];
-    struct viv_conn *dev;
+
+    struct etna_dev *dev;
+    struct etna_pipe *pipe;
+
+    uint32_t model;
+    uint32_t revision;
+    uint32_t features[5];
+
     struct etna_pipe_specs specs;
 };
 
@@ -61,7 +80,7 @@ etna_screen(struct pipe_screen *pscreen)
 }
 
 struct pipe_screen *
-etna_screen_create(struct viv_conn *dev);
+etna_screen_create(struct etna_dev *dev);
 
 #endif
 

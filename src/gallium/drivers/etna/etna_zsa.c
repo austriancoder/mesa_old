@@ -117,7 +117,7 @@ static void *etna_pipe_create_depth_stencil_alpha_state(struct pipe_context *pip
 
 static void etna_pipe_bind_depth_stencil_alpha_state(struct pipe_context *pipe, void *dsa)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     priv->dirty_bits |= ETNA_STATE_DSA;
     priv->depth_stencil_alpha_p = dsa;
     if(dsa)

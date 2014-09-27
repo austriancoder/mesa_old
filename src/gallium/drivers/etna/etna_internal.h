@@ -42,6 +42,16 @@
 /* PE render targets must be aligned to 64 bytes */
 #define ETNA_PE_ALIGNMENT (64)
 
+/* texture or surface layout */
+enum etna_surface_layout
+{
+    ETNA_LAYOUT_LINEAR = 0,
+    ETNA_LAYOUT_TILED = 1,
+    ETNA_LAYOUT_SUPER_TILED = 1|2, /* both tiling and supertiling bit enabled */
+    ETNA_LAYOUT_MULTI_TILED = 4|1, /* multi pipe tiled */
+    ETNA_LAYOUT_MULTI_SUPERTILED = 4|1|2 /* multi pipe supertiled */
+};
+
 /* GPU chip 3D specs */
 struct etna_pipe_specs
 {
@@ -91,6 +101,8 @@ struct etna_pipe_specs
     unsigned max_texture_size;
     /* maximum texture size */
     unsigned max_rendertarget_size;
+    /* number of pixel pipes */
+    unsigned pixel_pipes;
 };
 
 /** Compiled Gallium state. All the different compiled state atoms are woven together and uploaded

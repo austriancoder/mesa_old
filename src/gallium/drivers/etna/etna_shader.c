@@ -37,7 +37,7 @@
  * bank as dirty. */
 static void etna_fetch_uniforms(struct pipe_context *pipe, uint shader)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     struct pipe_constant_buffer *buf = NULL;
     switch(shader)
     {
@@ -216,7 +216,7 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
                                 uint shader, uint index,
                                 struct pipe_constant_buffer *buf)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     if(buf == NULL) /* Unbinding constant buffer */
     {
         if(likely(index == 0))
@@ -251,7 +251,7 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
 
 static void *etna_pipe_create_shader_state(struct pipe_context *pipe, const struct pipe_shader_state *pss)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     struct etna_shader_object *out = NULL;
     if(etna_compile_shader_object(&priv->specs, pss->tokens, &out) != ETNA_OK)
         return NULL;
@@ -266,7 +266,7 @@ static void etna_pipe_delete_shader_state(struct pipe_context *pipe, void *ss)
 
 static void etna_pipe_bind_fs_state(struct pipe_context *pipe, void *fss_)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     struct etna_shader_object *fss = (struct etna_shader_object*)fss_;
     if(priv->fs == fss) /* skip if already bound */
         return;
@@ -277,7 +277,7 @@ static void etna_pipe_bind_fs_state(struct pipe_context *pipe, void *fss_)
 
 static void etna_pipe_bind_vs_state(struct pipe_context *pipe, void *vss_)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     struct etna_shader_object *vss = (struct etna_shader_object*)vss_;
     if(priv->vs == vss) /* skip if already bound */
         return;

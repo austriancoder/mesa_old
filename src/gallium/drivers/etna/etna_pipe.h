@@ -86,7 +86,7 @@ struct etna_resource
     struct etna_bo *ts_bo; /* Tile status video memory */
 
     struct etna_resource_level levels[ETNA_NUM_LOD];
-    struct etna_pipe_context *last_ctx; /* Last bound context */
+    struct etna_context *last_ctx; /* Last bound context */
 
     uint32_t pipe_addr[2];
 };
@@ -146,7 +146,7 @@ enum
 };
 
 /* private opaque context structure */
-struct etna_pipe_context
+struct etna_context
 {
     struct pipe_context base;
     struct viv_conn *conn;
@@ -204,10 +204,10 @@ struct etna_pipe_context
     struct etna_3d_state gpu3d;
 };
 
-static INLINE struct etna_pipe_context *
-etna_pipe_context(struct pipe_context *p)
+static INLINE struct etna_context *
+etna_context(struct pipe_context *p)
 {
-    return (struct etna_pipe_context *)p;
+    return (struct etna_context *)p;
 }
 
 static INLINE struct etna_resource *

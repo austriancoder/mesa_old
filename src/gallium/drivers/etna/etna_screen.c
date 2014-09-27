@@ -28,11 +28,6 @@
 #include "etna_fence.h"
 #include "etna_resource.h"
 
-#include <etnaviv/etna_rs.h>
-#include <etnaviv/viv.h>
-#include <etnaviv/etna.h>
-#include <etnaviv/etna_util.h>
-
 #include "util/u_memory.h"
 #include "util/u_format.h"
 #include "util/u_transfer.h"
@@ -79,16 +74,27 @@ static void etna_set_debug_flags(const char *str)
    }
 }
 
-static void etna_screen_destroy( struct pipe_screen *screen )
+static void etna_screen_destroy( struct pipe_screen *pscreen )
 {
-    //struct etna_screen *priv = etna_screen(screen);
+	struct etna_screen *screen = etna_screen(pscreen);
+
+	if (screen->pipe)
+		etna_pipe_del(screen->pipe);
+
+	if (screen->dev)
+		etna_device_del(screen->dev);
+
     FREE(screen);
 }
 
-static const char *etna_screen_get_name( struct pipe_screen *screen )
+static const char *etna_screen_get_name( struct pipe_screen *pscreen )
 {
     struct etna_screen *priv = etna_screen(screen);
-    return priv->name;
+    static char buffer[128];
+
+    util_snprintf(buffer, sizeof(buffer), "Vivante GC%x rev %04x",
+            priv->model, priv->revision);
+    return buffer;
 }
 
 static const char *etna_screen_get_vendor( struct pipe_screen *screen )
@@ -293,7 +299,7 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
     case PIPE_SHADER_CAP_SUBROUTINES:
             return 0;
     case PIPE_SHADER_CAP_TGSI_SQRT_SUPPORTED:
-            return VIV_FEATURE(priv->dev, chipMinorFeatures0, HAS_SQRT_TRIG);
+            return VIV_FEATURE(priv, chipMinorFeatures0, HAS_SQRT_TRIG);
     case PIPE_SHADER_CAP_TGSI_POW_SUPPORTED:
             return false;
     case PIPE_SHADER_CAP_TGSI_LRP_SUPPORTED:
@@ -407,7 +413,7 @@ static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
         /* must be supported index format */
         if(format == PIPE_FORMAT_I8_UINT ||
            format == PIPE_FORMAT_I16_UINT ||
-           (format == PIPE_FORMAT_I32_UINT && VIV_FEATURE(priv->dev, chipFeatures, 32_BIT_INDICES)))
+           (format == PIPE_FORMAT_I32_UINT && VIV_FEATURE(priv, chipFeatures, 32_BIT_INDICES)))
         {
             allowed |= PIPE_BIND_INDEX_BUFFER;
         }
@@ -438,7 +444,7 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
 {
     struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
-    struct etna_pipe_context *ectx = rt_resource->last_ctx;
+    struct etna_context *ectx = rt_resource->last_ctx;
     assert(level <= resource->last_level && layer < resource->array_size);
     assert(ectx);
     struct etna_ctx *ctx = ectx->ctx;
@@ -500,35 +506,25 @@ static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
     ectx->base.flush(&ectx->base, &drawable->fence, 0);
 }
 
-struct pipe_screen *
-etna_screen_create(struct viv_conn *dev)
+static void etna_get_specs(struct etna_screen *screen)
 {
-    struct etna_screen *screen = CALLOC_STRUCT(etna_screen);
-    struct pipe_screen *pscreen = &screen->base;
-    screen->dev = dev;
+    uint32_t instruction_count = etna_pipe_get_param(screen->pipe, ETNA_GPU_INSTRUCTION_COUNT);
 
-    etna_set_debug_flags(getenv("ETNA_DEBUG"));
-
-    /* Set up driver identification */
-    snprintf(screen->name, ETNA_SCREEN_NAME_LEN, "Vivante GC%x rev %04x, %s",
-            dev->chip.chip_model, dev->chip.chip_revision, dev->kernel_driver.name);
-
-    /* Determine specs for device */
-    screen->specs.can_supertile = VIV_FEATURE(dev, chipMinorFeatures0, SUPER_TILED);
-    screen->specs.bits_per_tile = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?2:4;
-    screen->specs.ts_clear_value = VIV_FEATURE(dev, chipMinorFeatures0, 2BITPERTILE)?0x55555555:0x11111111;
+    screen->specs.can_supertile = VIV_FEATURE(screen, chipMinorFeatures0, SUPER_TILED);
+    screen->specs.bits_per_tile = VIV_FEATURE(screen, chipMinorFeatures0, 2BITPERTILE)?2:4;
+    screen->specs.ts_clear_value = VIV_FEATURE(screen, chipMinorFeatures0, 2BITPERTILE)?0x55555555:0x11111111;
     screen->specs.vertex_sampler_offset = 8; /* vertex and fragment samplers live in one address space, with vertex shaders at this offset */
     screen->specs.fragment_sampler_count = 8;
     screen->specs.vertex_sampler_count = 4;
-    screen->specs.vs_need_z_div = dev->chip.chip_model < 0x1000 && dev->chip.chip_model != 0x880;
-    screen->specs.vertex_output_buffer_size = dev->chip.vertex_output_buffer_size;
-    screen->specs.vertex_cache_size = dev->chip.vertex_cache_size;
-    screen->specs.shader_core_count = dev->chip.shader_core_count;
-    screen->specs.stream_count = dev->chip.stream_count;
-    screen->specs.has_sin_cos_sqrt = VIV_FEATURE(dev, chipMinorFeatures0, HAS_SQRT_TRIG);
-    screen->specs.has_shader_range_registers = dev->chip.chip_model >= 0x1000 || dev->chip.chip_model == 0x880;
-    screen->specs.npot_tex_any_wrap = VIV_FEATURE(dev, chipMinorFeatures1, NON_POWER_OF_TWO);
-    if (dev->chip.instruction_count > 256) /* unified instruction memory? */
+    screen->specs.vs_need_z_div = screen->model < 0x1000 && screen->model != 0x880;
+    screen->specs.vertex_output_buffer_size = etna_pipe_get_param(screen->pipe, ETNA_GPU_VERTEX_OUTPUT_BUFFER_SIZE);
+    screen->specs.vertex_cache_size = etna_pipe_get_param(screen->pipe, ETNA_GPU_VERTEX_CACHE_SIZE);
+    screen->specs.shader_core_count = etna_pipe_get_param(screen->pipe, ETNA_GPU_SHADER_CORE_COUNT);
+    screen->specs.stream_count = etna_pipe_get_param(screen->pipe, ETNA_GPU_STREAM_COUNT);
+    screen->specs.has_sin_cos_sqrt = VIV_FEATURE(screen, chipMinorFeatures0, HAS_SQRT_TRIG);
+    screen->specs.has_shader_range_registers = screen->model >= 0x1000 || screen->model == 0x880;
+    screen->specs.npot_tex_any_wrap = VIV_FEATURE(screen, chipMinorFeatures1, NON_POWER_OF_TWO);
+    if (instruction_count > 256) /* unified instruction memory? */
     {
         screen->specs.vs_offset = 0xC000;
         screen->specs.ps_offset = 0xD000; //like vivante driver
@@ -536,11 +532,11 @@ etna_screen_create(struct viv_conn *dev)
     } else {
         screen->specs.vs_offset = 0x4000;
         screen->specs.ps_offset = 0x6000;
-        screen->specs.max_instructions = dev->chip.instruction_count/2;
+        screen->specs.max_instructions = instruction_count/2;
     }
-    screen->specs.max_varyings = dev->chip.varyings_count;
-    screen->specs.max_registers = dev->chip.register_max;
-    if (dev->chip.chip_model < chipModel_GC4000) /* from QueryShaderCaps in kernel driver */
+    screen->specs.max_varyings = VIV_FEATURE(screen, chipMinorFeatures1, HALTI0)?12:8;	/* TODO */
+    screen->specs.max_registers = etna_pipe_get_param(screen->pipe, ETNA_GPU_REGISTER_MAX);
+    if (screen->model < chipModel_GC4000) /* from QueryShaderCaps in kernel driver */
     {
         screen->specs.max_vs_uniforms = 168;
         screen->specs.max_ps_uniforms = 64;
@@ -549,8 +545,41 @@ etna_screen_create(struct viv_conn *dev)
         screen->specs.max_ps_uniforms = 256;
     }
 
-    screen->specs.max_texture_size = VIV_FEATURE(dev, chipMinorFeatures0, TEXTURE_8K)?8192:4096;
-    screen->specs.max_rendertarget_size = VIV_FEATURE(dev, chipMinorFeatures0, RENDERTARGET_8K)?8192:4096;
+    screen->specs.max_texture_size = VIV_FEATURE(screen, chipMinorFeatures0, TEXTURE_8K)?8192:4096;
+    screen->specs.max_rendertarget_size = VIV_FEATURE(screen, chipMinorFeatures0, RENDERTARGET_8K)?8192:4096;
+    screen->specs.pixel_pipes = etna_pipe_get_param(screen->pipe, ETNA_GPU_PIXEL_PIPES);
+}
+
+struct pipe_screen *
+etna_screen_create(struct etna_dev *dev)
+{
+    struct etna_screen *screen = CALLOC_STRUCT(etna_screen);
+    struct pipe_screen *pscreen;
+
+    if (!screen)
+        return NULL;
+
+    pscreen = &screen->base;
+
+    screen->dev = dev;
+
+    screen->pipe = etna_pipe_new(screen->dev, ETNA_PIPE_3D);
+    if (!screen->pipe) {
+        DBG("could not create 3d pipe");
+        goto fail;
+    }
+
+    etna_set_debug_flags(getenv("ETNA_DEBUG"));
+
+    screen->model       = etna_pipe_get_param(screen->pipe, ETNA_GPU_MODEL);
+    screen->revision    = etna_pipe_get_param(screen->pipe, ETNA_GPU_REVISION);
+    screen->features[0] = etna_pipe_get_param(screen->pipe, ETNA_GPU_FEATURES_0);
+    screen->features[1] = etna_pipe_get_param(screen->pipe, ETNA_GPU_FEATURES_1);
+    screen->features[2] = etna_pipe_get_param(screen->pipe, ETNA_GPU_FEATURES_2);
+    screen->features[3] = etna_pipe_get_param(screen->pipe, ETNA_GPU_FEATURES_3);
+    screen->features[4] = etna_pipe_get_param(screen->pipe, ETNA_GPU_FEATURES_4);
+
+    etna_get_specs(screen);
 
     /* Initialize vtable */
     pscreen->destroy = etna_screen_destroy;
@@ -571,5 +600,9 @@ etna_screen_create(struct viv_conn *dev)
     etna_screen_resource_init(pscreen);
 
     return pscreen;
+
+fail:
+	etna_screen_destory(pscreen);
+	return NULL;
 }
 

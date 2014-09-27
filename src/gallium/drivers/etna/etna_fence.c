@@ -27,6 +27,7 @@ static boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
                         struct pipe_fence_handle *fence_h,
                         uint64_t timeout )
 {
+#if 0 /* TODO */
     struct etna_screen *screen = etna_screen(screen_h);
     uint32_t fence = PIPE_HANDLE_TO_ETNA_FENCE(fence_h);
     int rv;
@@ -38,6 +39,8 @@ static boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
         BUG("error waiting for fence %08x", fence);
     }
     return (rv != VIV_STATUS_TIMEOUT);
+#endif
+    return true;
 }
 
 /**

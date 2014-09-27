@@ -41,7 +41,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                                       struct pipe_resource *resource_,
                                       const struct pipe_surface *templat)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     struct etna_surface *surf = CALLOC_STRUCT(etna_surface);
     struct etna_resource *resource = etna_resource(resource_);
     assert(templat->u.tex.first_layer == templat->u.tex.last_layer);
@@ -103,7 +103,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .clear_bits = 0xffff
             });
     } else {
-        etna_rs_gen_clear_surface(priv->ctx, &surf->clear_command, surf, surf->level->clear_value);
+        etna_rs_gen_clear_surface(priv, &surf->clear_command, surf, surf->level->clear_value);
     }
     etna_resource_touch(pipe, surf->base.texture);
     return &surf->base;

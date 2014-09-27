@@ -70,7 +70,7 @@ static void *etna_pipe_create_rasterizer_state(struct pipe_context *pipe,
 
 static void etna_pipe_bind_rasterizer_state(struct pipe_context *pipe, void *rs)
 {
-    struct etna_pipe_context *priv = etna_pipe_context(pipe);
+    struct etna_context *priv = etna_context(pipe);
     priv->dirty_bits |= ETNA_STATE_RASTERIZER;
     priv->rasterizer_p = rs;
     if(rs)

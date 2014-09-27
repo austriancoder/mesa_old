@@ -40,7 +40,7 @@
  */
 void etna_resource_touch(struct pipe_context *pipe, struct pipe_resource *resource_)
 {
-    struct etna_pipe_context *ectx = etna_pipe_context(pipe);
+    struct etna_context *ectx = etna_context(pipe);
     struct etna_resource *resource = etna_resource(resource_);
     if(resource == NULL)
         return;
@@ -212,17 +212,6 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
 
     /* determine memory type */
     uint32_t flags = 0; /* XXX DRM_ETNA_GEM_CACHE_xxx */
-    enum viv_surf_type memtype = VIV_SURF_UNKNOWN;
-    if(templat->bind & PIPE_BIND_SAMPLER_VIEW)
-        flags |= DRM_ETNA_GEM_TYPE_TEX;
-    else if(templat->bind & PIPE_BIND_RENDER_TARGET)
-        flags |= DRM_ETNA_GEM_TYPE_RT;
-    else if(templat->bind & PIPE_BIND_DEPTH_STENCIL)
-        flags |= DRM_ETNA_GEM_TYPE_ZS;
-    else if(templat->bind & PIPE_BIND_INDEX_BUFFER)
-        flags |= DRM_ETNA_GEM_TYPE_IDX;
-    else if(templat->bind & PIPE_BIND_VERTEX_BUFFER)
-        flags |= DRM_ETNA_GEM_TYPE_VTX;
     DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i), %i layers, of format %s, size %08x flags %08x, memtype %i",
             resource,
             templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->array_size, util_format_name(templat->format),
