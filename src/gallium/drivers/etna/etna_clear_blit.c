@@ -66,7 +66,6 @@ static void etna_pipe_blit_save_state(struct pipe_context *pipe)
 /* Generate clear command for a surface (non-fast clear case) */
 void etna_rs_gen_clear_surface(struct etna_context *ectx, struct compiled_rs_state *rs_state, struct etna_surface *surf, uint32_t clear_value)
 {
-#if 0 /* TODO */
     struct etna_screen *screen = etna_screen(ectx->base.screen);
     uint bs = util_format_get_blocksize(surf->base.format);
     uint format = 0;
@@ -85,7 +84,11 @@ void etna_rs_gen_clear_surface(struct etna_context *ectx, struct compiled_rs_sta
     etna_compile_rs_state(screen, rs_state, &(struct rs_state){
             .source_format = format,
             .dest_format = format,
-            .dest_addr[0] = etna_bo_gpu_address(dest_bo) + surf->surf.offset,
+            .dest[0] = {
+                    .bo = dest_bo,
+                    .offset = surf->surf.offset,
+                    .flags = ETNA_RELOC_WRITE,
+            },
             .dest_stride = surf->surf.stride,
             .dest_tiling = tiled_clear ? surf->layout : ETNA_LAYOUT_LINEAR,
             .dither = {0xffffffff, 0xffffffff},
@@ -95,7 +98,6 @@ void etna_rs_gen_clear_surface(struct etna_context *ectx, struct compiled_rs_sta
             .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
             .clear_bits = 0xffff
         });
-#endif
 }
 
 static void etna_pipe_clear(struct pipe_context *pipe,

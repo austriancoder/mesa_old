@@ -86,7 +86,6 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
 
     if(surf->surf.ts_size)
     {
-#if 0 /* TODO */
         /* This (ab)uses the RS as a plain buffer memset().
            Currently uses a fixed row size of 64 bytes. Some benchmarking with different sizes may be in order.
          */
@@ -94,7 +93,11 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
         etna_compile_rs_state(screen, &surf->clear_command, &(struct rs_state){
                 .source_format = RS_FORMAT_A8R8G8B8,
                 .dest_format = RS_FORMAT_A8R8G8B8,
-                .dest_addr[0] = etna_bo_gpu_address(ts_bo) + surf->surf.ts_offset,
+                .dest[0] = {
+                        .bo = ts_bo,
+                        .offset = surf->surf.ts_offset,
+                        .flags = ETNA_RELOC_WRITE,
+                },
                 .dest_stride = 0x40,
                 .dest_tiling = ETNA_LAYOUT_TILED,
                 .dither = {0xffffffff, 0xffffffff},
@@ -104,7 +107,6 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
                 .clear_bits = 0xffff
             });
-#endif
     } else {
         etna_rs_gen_clear_surface(priv, &surf->clear_command, surf, surf->level->clear_value);
     }
