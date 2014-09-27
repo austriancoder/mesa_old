@@ -1,4 +1,5 @@
 C_SOURCES := etna_asm.c \
+	etna_rs.c \
 	etna_blend.c \
 	etna_clear_blit.c \
 	etna_compiler.c \

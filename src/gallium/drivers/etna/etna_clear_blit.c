@@ -27,6 +27,7 @@
 #include "etna_pipe.h"
 #include "etna_resource.h"
 #include "etna_translate.h"
+#include "etna_rs.h"
 #include "pipe/p_defines.h"
 #include "pipe/p_state.h"
 #include "util/u_blitter.h"

@@ -28,6 +28,7 @@
 #include <stdint.h>
 
 #include "etna_internal.h"
+#include "etna_rs.h"
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"
 #include "pipe/p_shader_tokens.h"
