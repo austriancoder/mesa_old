@@ -101,7 +101,7 @@ struct etna_shader_link_info
 /* Entry point to compiler.
  * Returns non-zero if compilation fails.
  */
-int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct tgsi_token *tokens,
+bool etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct tgsi_token *tokens,
         struct etna_shader_object **out);
 
 /* Debug dump of shader object */

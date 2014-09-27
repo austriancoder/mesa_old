@@ -1548,7 +1548,7 @@ static bool etna_compile_check_limits(struct etna_compile_data *cd)
     return true;
 }
 
-int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct tgsi_token *tokens,
+bool etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct tgsi_token *tokens,
         struct etna_shader_object **out)
 {
     /* Create scratch space that may be too large to fit on stack
@@ -1668,7 +1668,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     {
         FREE(cd);
         *out = NULL;
-        return -1;
+        return false;
     }
 
     /* fill in output structure */
@@ -1696,7 +1696,7 @@ int etna_compile_shader_object(const struct etna_pipe_specs *specs, const struct
     }
     *out = sobj;
     FREE(cd);
-    return 0;
+    return true;
 }
 
 extern const char *tgsi_swizzle_names[];
