@@ -54,6 +54,12 @@ void etna_stall(struct etna_cmd_stream *stream, uint32_t from, uint32_t to)
 	}
 }
 
+static void etna_emit_reloc(struct etna_cmd_stream *restrict stream, const struct etna_reloc *reloc)
+{
+	etna_cmd_stream_emit(stream, 0xdeadbeef);
+	etna_cmd_stream_reloc(stream, reloc);
+}
+
 /* submit RS state, without any processing and no dependence on context
  * except TS if this is a source-to-destination blit. */
 void etna_submit_rs_state(struct etna_context *restrict ctx, const struct compiled_rs_state *cs)
@@ -66,9 +72,9 @@ void etna_submit_rs_state(struct etna_context *restrict ctx, const struct compil
         etna_cmd_stream_reserve(stream, 22);
         /*0 */ etna_emit_load_state(stream, VIVS_RS_CONFIG>>2, 5, 0);
         /*1 */ etna_cmd_stream_emit(stream, cs->RS_CONFIG);
-        /*2 */ etna_cmd_stream_emit(stream, cs->RS_SOURCE_ADDR);
+        /*2 */ etna_emit_reloc(stream, &cs->source[0]);
         /*3 */ etna_cmd_stream_emit(stream, cs->RS_SOURCE_STRIDE);
-        /*4 */ etna_cmd_stream_emit(stream, cs->RS_DEST_ADDR);
+        /*4 */ etna_emit_reloc(stream, &cs->dest[0]);
         /*5 */ etna_cmd_stream_emit(stream, cs->RS_DEST_STRIDE);
         /*6 */ etna_emit_load_state(stream, VIVS_RS_WINDOW_SIZE>>2, 1, 0);
         /*7 */ etna_cmd_stream_emit(stream, cs->RS_WINDOW_SIZE);
@@ -99,26 +105,26 @@ void etna_submit_rs_state(struct etna_context *restrict ctx, const struct compil
         if (cs->RS_SOURCE_STRIDE & VIVS_RS_SOURCE_STRIDE_MULTI)
         {
             /*6 */ etna_emit_load_state(stream, VIVS_RS_PIPE_SOURCE_ADDR(0)>>2, 2, 0);
-            /*7 */ etna_cmd_stream_emit(stream, cs->RS_PIPE_SOURCE_ADDR[0]);
-            /*8 */ etna_cmd_stream_emit(stream, cs->RS_PIPE_SOURCE_ADDR[1]);
+            /*7 */ etna_emit_reloc(stream, &cs->pipe_source[0]);
+            /*8 */ etna_emit_reloc(stream, &cs->pipe_source[1]);
             /*9 */ etna_cmd_stream_emit(stream, 0x00000000); /* pad */
         }
         else
         {
             /*6 */ etna_emit_load_state(stream, VIVS_RS_PIPE_SOURCE_ADDR(0)>>2, 1, 0);
-            /*7 */ etna_cmd_stream_emit(stream, cs->RS_PIPE_SOURCE_ADDR[0]);
+            /*7 */ etna_emit_reloc(stream, &cs->pipe_source[0]);
         }
         if (cs->RS_DEST_STRIDE & VIVS_RS_DEST_STRIDE_MULTI)
         {
             /*10*/ etna_emit_load_state(stream, VIVS_RS_PIPE_DEST_ADDR(0)>>2, 2, 0);
-            /*11*/ etna_cmd_stream_emit(stream, cs->RS_PIPE_DEST_ADDR[0]);
-            /*12*/ etna_cmd_stream_emit(stream, cs->RS_PIPE_DEST_ADDR[1]);
+            /*11*/ etna_emit_reloc(stream, &cs->pipe_dest[0]);
+            /*12*/ etna_emit_reloc(stream, &cs->pipe_dest[1]);
             /*13*/ etna_cmd_stream_emit(stream, 0x00000000); /* pad */
         }
         else
         {
             /*10 */ etna_emit_load_state(stream, VIVS_RS_PIPE_DEST_ADDR(0)>>2, 1, 0);
-            /*11 */ etna_cmd_stream_emit(stream, cs->RS_PIPE_DEST_ADDR[0]);
+            /*11 */ etna_emit_reloc(stream, &cs->pipe_dest[0]);
         }
         /*14*/ etna_emit_load_state(stream, VIVS_RS_PIPE_OFFSET(0)>>2, 2, 0);
         /*15*/ etna_cmd_stream_emit(stream, cs->RS_PIPE_OFFSET[0]);
