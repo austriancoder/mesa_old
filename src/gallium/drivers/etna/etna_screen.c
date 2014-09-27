@@ -343,14 +343,6 @@ static uint64_t etna_screen_get_timestamp(struct pipe_screen *screen)
     return 0;
 }
 
-static struct pipe_context * etna_screen_context_create( struct pipe_screen *screen,
-                                        void *priv )
-{
-    struct etna_screen *es = etna_screen(screen);
-    struct pipe_context *ctx = etna_new_pipe_context(es->dev, &es->specs, screen, priv);
-    return ctx;
-}
-
 static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
                                enum pipe_format format,
                                enum pipe_texture_target target,
@@ -591,7 +583,7 @@ etna_screen_create(struct etna_dev *dev)
     pscreen->get_video_param = etna_screen_get_video_param;
     pscreen->get_compute_param = etna_screen_get_compute_param;
     pscreen->get_timestamp = etna_screen_get_timestamp;
-    pscreen->context_create = etna_screen_context_create;
+    pscreen->context_create = etna_context_create;
     pscreen->is_format_supported = etna_screen_is_format_supported;
     pscreen->is_video_format_supported = etna_screen_is_video_format_supported;
     pscreen->flush_frontbuffer = etna_screen_flush_frontbuffer;

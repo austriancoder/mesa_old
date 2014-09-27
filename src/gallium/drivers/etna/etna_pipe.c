@@ -35,6 +35,7 @@
 #include "etna_compiler.h"
 #include "etna_debug.h"
 #include "etna_fence.h"
+#include "etna_emit.h"
 #include "etna_rasterizer.h"
 #include "etna_resource.h"
 #include "etna_shader.h"
@@ -76,10 +77,11 @@
 static uint32_t active_samplers_bits(struct pipe_context *pipe)
 {
     struct etna_context *restrict e = etna_context(pipe);
+    struct etna_screen *restrict screen = etna_screen(pipe->screen);
     unsigned num_fragment_samplers = MIN2(e->num_fragment_samplers, e->num_fragment_sampler_views);
     unsigned num_vertex_samplers = MIN2(e->num_vertex_samplers, e->num_vertex_sampler_views);
     uint32_t active_samplers = etna_bits_ones(num_fragment_samplers) |
-                               etna_bits_ones(num_vertex_samplers) << e->specs.vertex_sampler_offset;
+                               etna_bits_ones(num_vertex_samplers) << screen->specs.vertex_sampler_offset;
     return active_samplers;
 }
 
@@ -93,7 +95,8 @@ static uint32_t active_samplers_bits(struct pipe_context *pipe)
 static void reset_context(struct pipe_context *restrict pipe)
 {
     struct etna_context *restrict e = etna_context(pipe);
-    struct etna_ctx *restrict ctx = e->ctx;
+    struct etna_cmd_stream *restrict stream = e->stream;
+    struct etna_screen *restrict screen = etna_screen(pipe->screen);
 
 #define EMIT_STATE(state_name, dest_field) \
     ETNA_COALESCE_STATE_UPDATE(state_name, e->gpu3d.dest_field, 0)
@@ -141,7 +144,7 @@ static void reset_context(struct pipe_context *restrict pipe)
     }
     /*00830*/ EMIT_STATE(VS_LOAD_BALANCING, VS_LOAD_BALANCING);
     /*00838*/ EMIT_STATE(VS_START_PC, VS_START_PC);
-    if (e->specs.has_shader_range_registers)
+    if (screen->specs.has_shader_range_registers)
     {
         /*0085C*/ EMIT_STATE(VS_RANGE, VS_RANGE);
     }
@@ -185,7 +188,7 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*0100C*/ EMIT_STATE(PS_TEMP_REGISTER_CONTROL, PS_TEMP_REGISTER_CONTROL);
     /*01010*/ EMIT_STATE(PS_CONTROL, PS_CONTROL);
     /*01018*/ EMIT_STATE(PS_START_PC, PS_START_PC);
-    if (e->specs.has_shader_range_registers)
+    if (screen->specs.has_shader_range_registers)
     {
         /*0101C*/ EMIT_STATE(PS_RANGE, PS_RANGE);
     }
@@ -193,7 +196,7 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*01404*/ EMIT_STATE(PE_DEPTH_NEAR, PE_DEPTH_NEAR);
     /*01408*/ EMIT_STATE(PE_DEPTH_FAR, PE_DEPTH_FAR);
     /*0140C*/ EMIT_STATE(PE_DEPTH_NORMALIZE, PE_DEPTH_NORMALIZE);
-    if (ctx->conn->chip.pixel_pipes == 1)
+    if (screen->specs.pixel_pipes == 1)
     {
         /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR);
     }
@@ -204,19 +207,19 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*01424*/ EMIT_STATE(PE_ALPHA_BLEND_COLOR, PE_ALPHA_BLEND_COLOR);
     /*01428*/ EMIT_STATE(PE_ALPHA_CONFIG, PE_ALPHA_CONFIG);
     /*0142C*/ EMIT_STATE(PE_COLOR_FORMAT, PE_COLOR_FORMAT);
-    if (ctx->conn->chip.pixel_pipes == 1)
+    if (screen->specs.pixel_pipes == 1)
     {
         /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR);
     }
     /*01434*/ EMIT_STATE(PE_COLOR_STRIDE, PE_COLOR_STRIDE);
     /*01454*/ EMIT_STATE(PE_HDEPTH_CONTROL, PE_HDEPTH_CONTROL);
-    if (ctx->conn->chip.pixel_pipes != 1)
+    if (screen->specs.pixel_pipes != 1)
     {
-        for(int x=0; x<ctx->conn->chip.pixel_pipes; ++x)
+        for(int x=0; x<screen->specs.pixel_pipes; ++x)
         {
             /*01460*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(x), PE_PIPE_COLOR_ADDR[x]);
         }
-        for(int x=0; x<ctx->conn->chip.pixel_pipes; ++x)
+        for(int x=0; x<screen->specs.pixel_pipes; ++x)
         {
             /*01480*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(x), PE_PIPE_DEPTH_ADDR[x]);
         }
@@ -275,11 +278,11 @@ static void reset_context(struct pipe_context *restrict pipe)
 #undef EMIT_STATE_FIXP
     /* re-submit current shader program and uniforms */
     /*04000 or 0C000*/
-    etna_set_state_multi(ctx, e->specs.vs_offset, e->gpu3d.vs_inst_mem_size, e->gpu3d.VS_INST_MEM);
+    etna_set_state_multi(stream, screen->specs.vs_offset, e->gpu3d.vs_inst_mem_size, e->gpu3d.VS_INST_MEM);
     /*06000 or 0D000*/
-    etna_set_state_multi(ctx, e->specs.ps_offset, e->gpu3d.ps_inst_mem_size, e->gpu3d.PS_INST_MEM);
-    /*05000*/ etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), e->gpu3d.vs_uniforms_size, e->gpu3d.VS_UNIFORMS);
-    /*07000*/ etna_set_state_multi(ctx, VIVS_PS_UNIFORMS(0), e->gpu3d.ps_uniforms_size, e->gpu3d.PS_UNIFORMS);
+    etna_set_state_multi(stream, screen->specs.ps_offset, e->gpu3d.ps_inst_mem_size, e->gpu3d.PS_INST_MEM);
+    /*05000*/ etna_set_state_multi(stream, VIVS_VS_UNIFORMS(0), e->gpu3d.vs_uniforms_size, e->gpu3d.VS_UNIFORMS);
+    /*07000*/ etna_set_state_multi(stream, VIVS_PS_UNIFORMS(0), e->gpu3d.ps_uniforms_size, e->gpu3d.PS_UNIFORMS);
 }
 
 /* Weave state before draw operation. This function merges all the compiled state blocks under
@@ -289,7 +292,8 @@ static void reset_context(struct pipe_context *restrict pipe)
 static void sync_context(struct pipe_context *restrict pipe)
 {
     struct etna_context *restrict e = etna_context(pipe);
-    struct etna_ctx *restrict ctx = e->ctx;
+    struct etna_screen *restrict screen = etna_screen(pipe->screen);
+    struct etna_cmd_stream *restrict stream = e->stream;
     uint32_t active_samplers = active_samplers_bits(pipe);
     uint32_t dirty = e->dirty_bits;
 
@@ -324,8 +328,8 @@ static void sync_context(struct pipe_context *restrict pipe)
         to_flush |= VIVS_GL_FLUSH_CACHE_TEXTURE | VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH;
     if(to_flush)
     {
-        etna_set_state(ctx, VIVS_GL_FLUSH_CACHE, to_flush);
-        etna_stall(ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
+        etna_set_state(e->stream, VIVS_GL_FLUSH_CACHE, to_flush);
+        etna_stall(e->stream, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
     }
 
     /* If MULTI_SAMPLE_CONFIG.MSAA_SAMPLES changed, clobber affected shader
@@ -371,7 +375,7 @@ static void sync_context(struct pipe_context *restrict pipe)
            memcmp(e->gpu3d.FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements.FE_VERTEX_ELEMENT_CONFIG, e->gpu3d.num_vertex_elements * 4))
         {
             /* Special case: vertex elements must always be sent in full if changed */
-            /*00600*/ etna_set_state_multi(ctx, VIVS_FE_VERTEX_ELEMENT_CONFIG(0), e->vertex_elements.num_elements, e->vertex_elements.FE_VERTEX_ELEMENT_CONFIG);
+            /*00600*/ etna_set_state_multi(e->stream, VIVS_FE_VERTEX_ELEMENT_CONFIG(0), e->vertex_elements.num_elements, e->vertex_elements.FE_VERTEX_ELEMENT_CONFIG);
             memcpy(e->gpu3d.FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements.FE_VERTEX_ELEMENT_CONFIG, e->vertex_elements.num_elements * 4);
 
             e->gpu3d.num_vertex_elements = e->vertex_elements.num_elements;
@@ -416,7 +420,7 @@ static void sync_context(struct pipe_context *restrict pipe)
     {
         /*0064C*/ EMIT_STATE(FE_VERTEX_STREAM_BASE_ADDR, FE_VERTEX_STREAM_BASE_ADDR, e->vertex_buffer[0].FE_VERTEX_STREAM_BASE_ADDR);
         /*00650*/ EMIT_STATE(FE_VERTEX_STREAM_CONTROL, FE_VERTEX_STREAM_CONTROL, e->vertex_buffer[0].FE_VERTEX_STREAM_CONTROL);
-        if (e->specs.has_shader_range_registers)
+        if (screen->specs.has_shader_range_registers)
         {
             for(int x=0; x<8; ++x)
             {
@@ -454,7 +458,7 @@ static void sync_context(struct pipe_context *restrict pipe)
         }
         /*00830*/ EMIT_STATE(VS_LOAD_BALANCING, VS_LOAD_BALANCING, e->shader_state.VS_LOAD_BALANCING);
         /*00838*/ EMIT_STATE(VS_START_PC, VS_START_PC, e->shader_state.VS_START_PC);
-        if (e->specs.has_shader_range_registers)
+        if (screen->specs.has_shader_range_registers)
         {
             /*0085C*/ EMIT_STATE(VS_RANGE, VS_RANGE, (e->shader_state.vs_inst_mem_size/4-1)<<16);
         }
@@ -547,7 +551,7 @@ static void sync_context(struct pipe_context *restrict pipe)
                     e->shader_state.PS_TEMP_REGISTER_CONTROL);
         /*01010*/ EMIT_STATE(PS_CONTROL, PS_CONTROL, e->shader_state.PS_CONTROL);
         /*01018*/ EMIT_STATE(PS_START_PC, PS_START_PC, e->shader_state.PS_START_PC);
-        if (e->specs.has_shader_range_registers)
+        if (screen->specs.has_shader_range_registers)
         {
             /*0101C*/ EMIT_STATE(PS_RANGE, PS_RANGE, ((e->shader_state.ps_inst_mem_size/4-1+0x100)<<16) | 0x100);
         }
@@ -565,7 +569,7 @@ static void sync_context(struct pipe_context *restrict pipe)
     {
         /*0140C*/ EMIT_STATE(PE_DEPTH_NORMALIZE, PE_DEPTH_NORMALIZE, e->framebuffer.PE_DEPTH_NORMALIZE);
 
-        if (ctx->conn->chip.pixel_pipes == 1)
+        if (screen->specs.pixel_pipes == 1)
         {
             /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR, e->framebuffer.PE_DEPTH_ADDR);
         }
@@ -598,13 +602,13 @@ static void sync_context(struct pipe_context *restrict pipe)
     }
     if(unlikely(dirty & (ETNA_STATE_FRAMEBUFFER)))
     {
-        if (ctx->conn->chip.pixel_pipes == 1)
+        if (screen->specs.pixel_pipes == 1)
         {
             /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR, e->framebuffer.PE_COLOR_ADDR);
             /*01434*/ EMIT_STATE(PE_COLOR_STRIDE, PE_COLOR_STRIDE, e->framebuffer.PE_COLOR_STRIDE);
             /*01454*/ EMIT_STATE(PE_HDEPTH_CONTROL, PE_HDEPTH_CONTROL, e->framebuffer.PE_HDEPTH_CONTROL);
         }
-        else if (ctx->conn->chip.pixel_pipes == 2)
+        else if (screen->specs.pixel_pipes == 2)
         {
             /*01434*/ EMIT_STATE(PE_COLOR_STRIDE, PE_COLOR_STRIDE, e->framebuffer.PE_COLOR_STRIDE);
             /*01454*/ EMIT_STATE(PE_HDEPTH_CONTROL, PE_HDEPTH_CONTROL, e->framebuffer.PE_HDEPTH_CONTROL);
@@ -716,11 +720,11 @@ static void sync_context(struct pipe_context *restrict pipe)
     {
         /* Special case: a new shader was loaded; simply re-load all uniforms and shader code at once */
         /*04000 or 0C000*/
-        etna_set_state_multi(ctx, e->specs.vs_offset, e->shader_state.vs_inst_mem_size, e->shader_state.VS_INST_MEM);
+        etna_set_state_multi(e->stream, screen->specs.vs_offset, e->shader_state.vs_inst_mem_size, e->shader_state.VS_INST_MEM);
         /*06000 or 0D000*/
-        etna_set_state_multi(ctx, e->specs.ps_offset, e->shader_state.ps_inst_mem_size, e->shader_state.PS_INST_MEM);
-        /*05000*/ etna_set_state_multi(ctx, VIVS_VS_UNIFORMS(0), e->shader_state.vs_uniforms_size, e->shader_state.VS_UNIFORMS);
-        /*07000*/ etna_set_state_multi(ctx, VIVS_PS_UNIFORMS(0), e->shader_state.ps_uniforms_size, e->shader_state.PS_UNIFORMS);
+        etna_set_state_multi(e->stream, screen->specs.ps_offset, e->shader_state.ps_inst_mem_size, e->shader_state.PS_INST_MEM);
+        /*05000*/ etna_set_state_multi(e->stream, VIVS_VS_UNIFORMS(0), e->shader_state.vs_uniforms_size, e->shader_state.VS_UNIFORMS);
+        /*07000*/ etna_set_state_multi(e->stream, VIVS_PS_UNIFORMS(0), e->shader_state.ps_uniforms_size, e->shader_state.PS_UNIFORMS);
 
         /* Copy uniforms to gpu3d, so that incremental updates to uniforms are possible as long as the
          * same shader remains bound */
@@ -772,7 +776,7 @@ static void etna_pipe_destroy(struct pipe_context *pipe)
     struct etna_context *priv = etna_context(pipe);
     etna_pipe_clear_blit_destroy(pipe);
     etna_pipe_transfer_destroy(pipe);
-    etna_free(priv->ctx);
+    etna_cmd_stream_del(priv->stream);
     FREE(pipe);
 }
 
@@ -801,11 +805,11 @@ static void etna_pipe_draw_vbo(struct pipe_context *pipe,
     }
     if(info->indexed)
     {
-        etna_draw_indexed_primitives(priv->ctx, translate_draw_mode(info->mode),
+        etna_draw_indexed_primitives(priv->stream, translate_draw_mode(info->mode),
                 info->start, prims, info->index_bias);
     } else
     {
-        etna_draw_primitives(priv->ctx, translate_draw_mode(info->mode),
+        etna_draw_primitives(priv->stream, translate_draw_mode(info->mode),
                 info->start, prims);
     }
     if(DBG_ENABLED(ETNA_DBG_FLUSH_ALL))
@@ -821,7 +825,7 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
                                       unsigned num_elements,
                                       const struct pipe_vertex_element *elements)
 {
-    struct etna_context *priv = etna_context(pipe);
+    struct etna_screen *screen = etna_screen(pipe->screen);
     struct compiled_vertex_elements_state *cs = CALLOC_STRUCT(compiled_vertex_elements_state);
     /* XXX could minimize number of consecutive stretches here by sorting, and
      * permuting the inputs in shader or does Mesa do this already? */
@@ -834,7 +838,7 @@ static void *etna_pipe_create_vertex_elements_state(struct pipe_context *pipe,
     bool incompatible = false;
     for(unsigned idx=0; idx<num_elements; ++idx)
     {
-        if(elements[idx].vertex_buffer_index >= priv->specs.stream_count ||
+        if(elements[idx].vertex_buffer_index >= screen->specs.stream_count ||
            elements[idx].instance_divisor > 0)
             incompatible = true;
     }
@@ -934,6 +938,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                               const struct pipe_framebuffer_state *sv)
 {
     struct etna_context *priv = etna_context(pipe);
+    struct etna_screen *screen = etna_screen(pipe->screen);
     struct compiled_framebuffer_state *cs = &priv->framebuffer;
     int nr_samples_color = -1;
     int nr_samples_depth = -1;
@@ -962,24 +967,28 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
         }
 
         struct etna_resource *res = etna_resource(cbuf->base.texture);
+#if 0 /* TODO */
         struct etna_bo *bo = res->bo;
-        if (priv->ctx->conn->chip.pixel_pipes == 1)
+        if (screen->specs.pixel_pipes == 1)
         {
             cs->PE_COLOR_ADDR = etna_bo_gpu_address(bo) + cbuf->surf.offset;
         }
-        else if (priv->ctx->conn->chip.pixel_pipes == 2)
+        else if (screen->specs.pixel_pipes == 2)
         {
             cs->PE_PIPE_COLOR_ADDR[0] = res->pipe_addr[0];
             cs->PE_PIPE_COLOR_ADDR[1] = res->pipe_addr[1];
         }
+#endif
         cs->PE_COLOR_STRIDE = cbuf->surf.stride;
         if(cbuf->surf.ts_size)
         {
+#if 0 /* TODO */
             struct etna_bo *ts_bo = etna_resource(cbuf->base.texture)->ts_bo;
             ts_mem_config |= VIVS_TS_MEM_CONFIG_COLOR_FAST_CLEAR;
             cs->TS_COLOR_CLEAR_VALUE = cbuf->level->clear_value;
             cs->TS_COLOR_STATUS_BASE = etna_bo_gpu_address(ts_bo) + cbuf->surf.ts_offset;
             cs->TS_COLOR_SURFACE_BASE = etna_bo_gpu_address(bo) + cbuf->surf.offset;
+#endif
         }
         /* MSAA */
         if(cbuf->base.texture->nr_samples > 1)
@@ -1006,11 +1015,11 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                 /* merged with depth_stencil_alpha */
         struct etna_resource *res = etna_resource(zsbuf->base.texture);
         struct etna_bo *bo = res->bo;
-        if (priv->ctx->conn->chip.pixel_pipes == 1)
+        if (screen->specs.pixel_pipes == 1)
         {
             cs->PE_DEPTH_ADDR = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
         }
-        else if (priv->ctx->conn->chip.pixel_pipes == 2)
+        else if (screen->specs.pixel_pipes == 2)
         {
             cs->PE_PIPE_DEPTH_ADDR[0] = res->pipe_addr[0];
             cs->PE_PIPE_DEPTH_ADDR[1] = res->pipe_addr[1];
@@ -1182,11 +1191,13 @@ static void etna_pipe_set_vertex_buffers( struct pipe_context *pipe,
         pipe_resource_reference(&priv->vertex_buffer_s[slot].buffer, vbi->buffer);
         priv->vertex_buffer_s[slot].user_buffer = vbi->user_buffer;
         /* determine addresses */
-        viv_addr_t gpu_addr = 0;
+        uint32_t gpu_addr = 0;
         if(vbi->buffer) /* GPU buffer */
         {
+            /* TODO
             struct etna_bo *bo = etna_resource(vbi->buffer)->bo;
             gpu_addr = etna_bo_gpu_address(bo) + vbi->buffer_offset;
+             */
         }
         /* compiled state */
         cs->FE_VERTEX_STREAM_CONTROL = FE_VERTEX_STREAM_CONTROL_VERTEX_STRIDE(vbi->stride);
@@ -1231,6 +1242,9 @@ static void etna_pipe_flush(struct pipe_context *pipe,
              enum pipe_flush_flags flags)
 {
     struct etna_context *priv = etna_context(pipe);
+
+#if 0
+
     uint32_t _fence_tmp; /* just pass through fence, though we have to convert the type... */
     uint32_t *fence_in = (fence_out == NULL) ? NULL : (&_fence_tmp);
     if(etna_flush(priv->ctx, fence_in) != ETNA_OK)
@@ -1248,6 +1262,14 @@ static void etna_pipe_flush(struct pipe_context *pipe,
             abort();
         }
     }
+#endif
+
+    /* TODO: check if we really need to flush */
+
+    if (DBG_ENABLED(ETNA_DBG_FINISH_ALL))
+        etna_cmd_stream_finish(priv->stream);
+    else
+        etna_cmd_stream_flush(priv->stream);
 }
 
 static void etna_pipe_set_clip_state(struct pipe_context *pipe, const struct pipe_clip_state *pcs)
@@ -1261,26 +1283,27 @@ static void etna_pipe_set_polygon_stipple(struct pipe_context *pctx,
     /* NOP */
 }
 
-struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *screen, void *priv)
+struct pipe_context * etna_context_create(struct pipe_screen *pscreen, void *priv)
 {
     struct etna_context *ectx = CALLOC_STRUCT(etna_context);
+    struct pipe_context *pc;
+
     if(ectx == NULL)
         return NULL;
-    struct pipe_context *pc = &ectx->base;
 
+    pc = &ectx->base;
     pc->priv = priv;
-    pc->screen = screen;
+    pc->screen = pscreen;
 
-    if(etna_create(dev, &ectx->ctx) < 0)
+    ectx->stream = etna_cmd_stream_new(etna_screen(pscreen)->pipe);
+    if (!ectx->stream)
     {
-        FREE(pc);
+        FREE(ectx);
         return NULL;
     }
 
     /* context ctxate setup */
     ectx->dirty_bits = 0xffffffff;
-    ectx->conn = dev;
-    ectx->specs = *specs;
 
     /*  Set sensible defaults for state */
     ectx->gpu3d.PA_W_CLIP_LIMIT = 0x34000001;

@@ -28,6 +28,7 @@
 #include <stdint.h>
 
 #include "etna_internal.h"
+#include "etna_screen.h"
 #include "etna_rs.h"
 #include "pipe/p_defines.h"
 #include "pipe/p_format.h"
@@ -35,8 +36,6 @@
 #include "pipe/p_state.h"
 #include "pipe/p_context.h"
 #include "util/u_slab.h"
-
-struct pipe_screen;
 
 struct etna_shader_input
 {
@@ -146,10 +145,8 @@ enum
 struct etna_context
 {
     struct pipe_context base;
-    struct viv_conn *conn;
-    struct etna_ctx *ctx;
+    struct etna_cmd_stream *stream;
     unsigned dirty_bits;
-    struct etna_pipe_specs specs;
     struct util_slab_mempool transfer_pool;
     struct blitter_context *blitter;
 
@@ -231,7 +228,8 @@ etna_transfer(struct pipe_transfer *p)
     return (struct etna_transfer *)p;
 }
 
-struct pipe_context *etna_new_pipe_context(struct viv_conn *dev, const struct etna_pipe_specs *specs, struct pipe_screen *scr, void *priv);
+struct pipe_context *
+etna_context_create(struct pipe_screen *pscreen, void *priv);
 
 #endif
 
