@@ -25,6 +25,7 @@
 
 #include "etna_internal.h"
 #include "etna_pipe.h"
+#include "etna_emit.h"
 #include "etna_resource.h"
 #include "etna_translate.h"
 #include "etna_rs.h"
@@ -65,6 +66,7 @@ static void etna_pipe_blit_save_state(struct pipe_context *pipe)
 /* Generate clear command for a surface (non-fast clear case) */
 void etna_rs_gen_clear_surface(struct etna_context *ectx, struct compiled_rs_state *rs_state, struct etna_surface *surf, uint32_t clear_value)
 {
+#if 0 /* TODO */
     struct etna_screen *screen = etna_screen(ectx->base.screen);
     uint bs = util_format_get_blocksize(surf->base.format);
     uint format = 0;
@@ -93,6 +95,7 @@ void etna_rs_gen_clear_surface(struct etna_context *ectx, struct compiled_rs_sta
             .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
             .clear_bits = 0xffff
         });
+#endif
 }
 
 static void etna_pipe_clear(struct pipe_context *pipe,
@@ -106,8 +109,8 @@ static void etna_pipe_clear(struct pipe_context *pipe,
      * This is especially important when coming from another surface, as otherwise it may clear
      * part of the old surface instead.
      */
-    etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
-    etna_stall(priv->ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
+    etna_set_state(priv->stream, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_DEPTH);
+    etna_stall(priv->stream, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
     /* Preparation: Flush the TS if needed. This must be done after flushing
      * color and depth, otherwise it can result in crashes */
     bool need_ts_flush = false;
@@ -125,7 +128,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
     }
     if(need_ts_flush)
     {
-        etna_set_state(priv->ctx, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
+        etna_set_state(priv->stream, VIVS_TS_FLUSH_CACHE, VIVS_TS_FLUSH_CACHE_FLUSH);
     }
     /* No need to set up the TS here as RS clear operations (in contrast to
      * resolve and copy) do not require the TS state.
@@ -143,7 +146,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
                 if(!DBG_ENABLED(ETNA_DBG_NO_AUTODISABLE))
                 {
                     /* Set number of color tiles to be filled */
-                    etna_set_state(priv->ctx, VIVS_TS_COLOR_AUTO_DISABLE_COUNT, surf->surf.padded_width*surf->surf.padded_height/16);
+                    etna_set_state(priv->stream, VIVS_TS_COLOR_AUTO_DISABLE_COUNT, surf->surf.padded_width*surf->surf.padded_height/16);
                     priv->framebuffer.TS_MEM_CONFIG |= VIVS_TS_MEM_CONFIG_COLOR_AUTO_DISABLE;
                 }
                 priv->dirty_bits |= ETNA_STATE_TS;
@@ -153,7 +156,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
                 /* If clear color changed, re-generate stored command */
                 etna_rs_gen_clear_surface(priv, &surf->clear_command, surf, new_clear_value);
             }
-            etna_submit_rs_state(priv->ctx, &surf->clear_command);
+            etna_submit_rs_state(priv, &surf->clear_command);
             surf->level->clear_value = new_clear_value;
         }
     }
@@ -168,7 +171,7 @@ static void etna_pipe_clear(struct pipe_context *pipe,
             if(!DBG_ENABLED(ETNA_DBG_NO_AUTODISABLE))
             {
                 /* Set number of depth tiles to be filled */
-                etna_set_state(priv->ctx, VIVS_TS_DEPTH_AUTO_DISABLE_COUNT, surf->surf.padded_width*surf->surf.padded_height/16);
+                etna_set_state(priv->stream, VIVS_TS_DEPTH_AUTO_DISABLE_COUNT, surf->surf.padded_width*surf->surf.padded_height/16);
                 priv->framebuffer.TS_MEM_CONFIG |= VIVS_TS_MEM_CONFIG_DEPTH_AUTO_DISABLE;
             }
             priv->dirty_bits |= ETNA_STATE_TS;
@@ -177,10 +180,10 @@ static void etna_pipe_clear(struct pipe_context *pipe,
             /* If clear depth value changed, re-generate stored command */
             etna_rs_gen_clear_surface(priv, &surf->clear_command, surf, new_clear_value);
         }
-        etna_submit_rs_state(priv->ctx, &surf->clear_command);
+        etna_submit_rs_state(priv, &surf->clear_command);
         surf->level->clear_value = new_clear_value;
     }
-    etna_stall(priv->ctx, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
+    etna_stall(priv->stream, SYNC_RECIPIENT_RA, SYNC_RECIPIENT_PE);
 }
 
 static void etna_pipe_clear_render_target(struct pipe_context *pipe,
