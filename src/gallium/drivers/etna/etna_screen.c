@@ -543,7 +543,7 @@ static void etna_get_specs(struct etna_screen *screen)
 }
 
 struct pipe_screen *
-etna_screen_create(struct etna_dev *dev)
+etna_screen_create(struct etna_device *dev)
 {
     struct etna_screen *screen = CALLOC_STRUCT(etna_screen);
     struct pipe_screen *pscreen;

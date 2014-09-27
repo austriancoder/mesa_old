@@ -29,8 +29,6 @@
 #include "pipe/p_screen.h"
 #include "os/os_thread.h"
 
-struct etna_bo;
-
 /* Enum with indices for each of the feature words */
 enum viv_features_word
 {
@@ -51,7 +49,7 @@ enum viv_features_word
 struct etna_screen {
     struct pipe_screen base;
 
-    struct etna_dev *dev;
+    struct etna_device *dev;
     struct etna_pipe *pipe;
 
     uint32_t model;
@@ -81,7 +79,7 @@ etna_screen(struct pipe_screen *pscreen)
 }
 
 struct pipe_screen *
-etna_screen_create(struct etna_dev *dev);
+etna_screen_create(struct etna_device *dev);
 
 #endif
 
