@@ -32,8 +32,6 @@
 #include "state.xml.h"
 #include "state_3d.xml.h"
 #include "cmdstream.xml.h"
-#include <etnaviv/etna_util.h>
-#include <etnaviv/etna_tex.h>
 #include "etna_internal.h"
 #include "etna_debug.h"
 

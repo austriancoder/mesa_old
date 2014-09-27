@@ -56,8 +56,6 @@
 #include "util/u_memory.h"
 #include "util/u_math.h"
 
-#include <etnaviv/etna.h>
-#include <etnaviv/etna_util.h>
 #include "isa.xml.h"
 #include "state_3d.xml.h"
 

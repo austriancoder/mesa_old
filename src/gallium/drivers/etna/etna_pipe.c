@@ -29,8 +29,6 @@
 #include "state.xml.h"
 #include "state_3d.xml.h"
 #include "cmdstream.xml.h"
-#include <etnaviv/viv.h>
-#include <etnaviv/etna.h>
 
 #include "etna_blend.h"
 #include "etna_clear_blit.h"

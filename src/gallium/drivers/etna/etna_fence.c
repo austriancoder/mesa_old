@@ -5,10 +5,6 @@
 #include "util/u_inlines.h"
 #include "util/u_string.h"
 
-#include <etnaviv/viv.h>
-#include <etnaviv/etna.h>
-#include <etnaviv/etna_queue.h>
-
 /**
  * Reference or unreference a fence. This is pretty much a no-op.
  */
