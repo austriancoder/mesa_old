@@ -23,6 +23,7 @@
 /* Texture CSOs */
 #include "etna_texture.h"
 
+#include "etna_emit.h"
 #include "etna_internal.h"
 #include "etna_pipe.h"
 #include "etna_translate.h"
@@ -66,6 +67,7 @@ static void etna_pipe_bind_sampler_states (struct pipe_context * pipe,
 {
     /* bind fragment sampler */
     struct etna_context *priv = etna_context(pipe);
+    struct etna_screen *screen = etna_screen(pipe->screen);
     priv->dirty_bits |= ETNA_STATE_SAMPLERS;
     priv->num_fragment_samplers = num_samplers;
     for(int idx=0; idx<num_samplers; ++idx)
@@ -78,9 +80,9 @@ static void etna_pipe_bind_sampler_states (struct pipe_context * pipe,
     /* bind vertex sampler */
     for(int idx=0; idx<num_samplers; ++idx)
     {
-        priv->sampler_p[priv->specs.vertex_sampler_offset + idx] = samplers[idx];
+        priv->sampler_p[screen->specs.vertex_sampler_offset + idx] = samplers[idx];
         if(samplers[idx])
-            priv->sampler[priv->specs.vertex_sampler_offset + idx] = *(struct compiled_sampler_state*)samplers[idx];
+            priv->sampler[screen->specs.vertex_sampler_offset + idx] = *(struct compiled_sampler_state*)samplers[idx];
     }
 }
 
@@ -95,6 +97,7 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
                                                  const struct pipe_sampler_view *templat)
 {
     struct etna_context *priv = etna_context(pipe);
+    struct etna_screen *screen = etna_screen(pipe->screen);
     struct etna_sampler_view *sv = CALLOC_STRUCT(etna_sampler_view);
     sv->base = *templat;
     sv->base.context = pipe;
@@ -127,16 +130,18 @@ static struct pipe_sampler_view *etna_pipe_create_sampler_view(struct pipe_conte
             VIVS_TE_SAMPLER_LOG_SIZE_HEIGHT(etna_log2_fixp55(res->base.height0));
 
     /* Set up levels-of-detail */
+#if 0 /* TODO */
     for(int lod=0; lod<=res->base.last_level; ++lod)
     {
         cs->TE_SAMPLER_LOD_ADDR[lod] = etna_bo_gpu_address(res->bo) + res->levels[lod].offset;
     }
+#endif
     cs->min_lod = sv->base.u.tex.first_level << 5;
     cs->max_lod = MIN2(sv->base.u.tex.last_level, res->base.last_level) << 5;
 
     /* Workaround for npot textures -- it appears that only CLAMP_TO_EDGE is supported when the
      * appropriate capability is not set. */
-    if(!priv->specs.npot_tex_any_wrap &&
+    if(!screen->specs.npot_tex_any_wrap &&
         (!util_is_power_of_two(res->base.width0) || !util_is_power_of_two(res->base.height0)))
     {
         cs->TE_SAMPLER_CONFIG0_MASK = ~(VIVS_TE_SAMPLER_CONFIG0_UWRAP__MASK |
@@ -167,6 +172,7 @@ static void etna_pipe_set_sampler_views(struct pipe_context *pipe,
 {
     /* fragment sampler */
     struct etna_context *priv = etna_context(pipe);
+    struct etna_screen *screen = etna_screen(pipe->screen);
     unsigned idx;
     priv->dirty_bits |= ETNA_STATE_SAMPLER_VIEWS;
     priv->num_fragment_sampler_views = num_views;
@@ -176,13 +182,13 @@ static void etna_pipe_set_sampler_views(struct pipe_context *pipe,
         if(info[idx])
             priv->sampler_view[idx] = *etna_sampler_view(info[idx])->internal;
     }
-    for(; idx<priv->specs.fragment_sampler_count; ++idx)
+    for(; idx<screen->specs.fragment_sampler_count; ++idx)
     {
         pipe_sampler_view_reference(&priv->sampler_view_s[idx], NULL);
     }
 
     /* vertex sampler */
-    unsigned offset = priv->specs.vertex_sampler_offset;
+    unsigned offset = screen->specs.vertex_sampler_offset;
 
     for(idx=0; idx<num_views; ++idx)
     {
@@ -190,7 +196,7 @@ static void etna_pipe_set_sampler_views(struct pipe_context *pipe,
         if(info[idx])
             priv->sampler_view[offset + idx] = *etna_sampler_view(info[idx])->internal;
     }
-    for(; idx<priv->specs.vertex_sampler_count; ++idx)
+    for(; idx<screen->specs.vertex_sampler_count; ++idx)
     {
         pipe_sampler_view_reference(&priv->sampler_view_s[offset + idx], NULL);
     }
@@ -202,7 +208,7 @@ static void etna_pipe_texture_barrier(struct pipe_context *pipe)
     /* clear color and texture cache to make sure that texture unit reads
      * what has been written
      */
-    etna_set_state(priv->ctx, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_TEXTURE);
+    etna_set_state(priv->stream, VIVS_GL_FLUSH_CACHE, VIVS_GL_FLUSH_CACHE_COLOR | VIVS_GL_FLUSH_CACHE_TEXTURE);
 }
 
 void etna_pipe_texture_init(struct pipe_context *pc)

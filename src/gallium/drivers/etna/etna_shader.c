@@ -251,9 +251,9 @@ static void etna_set_constant_buffer(struct pipe_context *pipe,
 
 static void *etna_pipe_create_shader_state(struct pipe_context *pipe, const struct pipe_shader_state *pss)
 {
-    struct etna_context *priv = etna_context(pipe);
+    struct etna_screen *screen = etna_screen(pipe->screen);
     struct etna_shader_object *out = NULL;
-    if(!etna_compile_shader_object(&priv->specs, pss->tokens, &out))
+    if(!etna_compile_shader_object(&screen->specs, pss->tokens, &out))
         return NULL;
     else
         return out;

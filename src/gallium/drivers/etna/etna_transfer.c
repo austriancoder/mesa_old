@@ -23,6 +23,8 @@
 /* Pipe memory transfer
  */
 #include "etna_transfer.h"
+#include "etna_screen.h"
+#include "etna_tiling.h"
 #include "etna_pipe.h"
 #include "etna_debug.h"
 
@@ -63,7 +65,7 @@ static void *etna_pipe_transfer_map(struct pipe_context *pipe,
     /* PIPE_TRANSFER_READ always requires a sync. */
     if(usage & PIPE_TRANSFER_READ)
     {
-        etna_finish(priv->ctx);
+        etna_cmd_stream_finish(priv->stream);
     }
     /* XXX we don't handle PIPE_TRANSFER_FLUSH_EXPLICIT; this flag can be ignored when mapping in-place,
      * but when not in place we need to fire off the copy operation in transfer_flush_region (currently

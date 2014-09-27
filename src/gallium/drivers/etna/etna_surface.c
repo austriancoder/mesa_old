@@ -42,6 +42,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                                       const struct pipe_surface *templat)
 {
     struct etna_context *priv = etna_context(pipe);
+    struct etna_screen *screen = etna_screen(pipe->screen);
     struct etna_surface *surf = CALLOC_STRUCT(etna_surface);
     struct etna_resource *resource = etna_resource(resource_);
     assert(templat->u.tex.first_layer == templat->u.tex.last_layer);
@@ -85,11 +86,12 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
 
     if(surf->surf.ts_size)
     {
+#if 0 /* TODO */
         /* This (ab)uses the RS as a plain buffer memset().
            Currently uses a fixed row size of 64 bytes. Some benchmarking with different sizes may be in order.
          */
         struct etna_bo *ts_bo = etna_resource(surf->base.texture)->ts_bo;
-        etna_compile_rs_state(priv->ctx, &surf->clear_command, &(struct rs_state){
+        etna_compile_rs_state(screen, &surf->clear_command, &(struct rs_state){
                 .source_format = RS_FORMAT_A8R8G8B8,
                 .dest_format = RS_FORMAT_A8R8G8B8,
                 .dest_addr[0] = etna_bo_gpu_address(ts_bo) + surf->surf.ts_offset,
@@ -102,6 +104,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
                 .clear_bits = 0xffff
             });
+#endif
     } else {
         etna_rs_gen_clear_surface(priv, &surf->clear_command, surf, surf->level->clear_value);
     }

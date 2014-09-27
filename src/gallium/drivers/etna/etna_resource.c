@@ -252,10 +252,10 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
 static void etna_screen_resource_destroy(struct pipe_screen *screen,
                         struct pipe_resource *resource_)
 {
-    struct etna_screen *priv = etna_screen(screen);
     struct etna_resource *resource = etna_resource(resource_);
     if(resource == NULL)
         return;
+#if 0 /* TODO */
     struct etna_queue *queue = NULL;
     if(resource->last_ctx != NULL)
     {
@@ -269,8 +269,9 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
     } else {
         DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: resource destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
     }
-    etna_bo_del(priv->dev, resource->bo, queue);
-    etna_bo_del(priv->dev, resource->ts_bo, queue);
+#endif
+    etna_bo_del(resource->bo);
+    etna_bo_del(resource->ts_bo);
     FREE(resource);
 }
 
