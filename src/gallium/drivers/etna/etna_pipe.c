@@ -1015,6 +1015,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
                 /* merged with depth_stencil_alpha */
         struct etna_resource *res = etna_resource(zsbuf->base.texture);
         struct etna_bo *bo = res->bo;
+#if o /* TODO */
         if (screen->specs.pixel_pipes == 1)
         {
             cs->PE_DEPTH_ADDR = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
@@ -1035,6 +1036,7 @@ static void etna_pipe_set_framebuffer_state(struct pipe_context *pipe,
             cs->TS_DEPTH_STATUS_BASE = etna_bo_gpu_address(ts_bo) + zsbuf->surf.ts_offset;
             cs->TS_DEPTH_SURFACE_BASE = etna_bo_gpu_address(bo) + zsbuf->surf.offset;
         }
+#endif
         ts_mem_config |= (depth_bits == 16 ? VIVS_TS_MEM_CONFIG_DEPTH_16BPP : 0);
         /* MSAA */
         if(zsbuf->base.texture->nr_samples > 1)
@@ -1230,8 +1232,9 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
         struct etna_bo *bo = etna_resource(ib->buffer)->bo;
         cs->FE_INDEX_STREAM_CONTROL =
                 translate_index_size(ib->index_size);
+#if 0 /* TODO */
         cs->FE_INDEX_STREAM_BASE_ADDR = etna_bo_gpu_address(bo) + ib->offset;
-
+#endif
         etna_resource_touch(pipe, ib->buffer);
     }
     priv->dirty_bits |= ETNA_STATE_INDEX_BUFFER;
