@@ -47,6 +47,7 @@
 #include "etna_asm.h"
 #include "etna_internal.h"
 #include "etna_debug.h"
+#include "etna_util.h"
 
 #include "tgsi/tgsi_iterate.h"
 #include "tgsi/tgsi_strings.h"

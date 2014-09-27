@@ -34,6 +34,7 @@
 #include "cmdstream.xml.h"
 #include "etna_internal.h"
 #include "etna_debug.h"
+#include "etna_util.h"
 
 #include "util/u_format.h"
 
