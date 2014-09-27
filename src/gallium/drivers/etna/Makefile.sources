@@ -3,6 +3,7 @@ C_SOURCES := etna_asm.c \
 	etna_blend.c \
 	etna_clear_blit.c \
 	etna_compiler.c \
+	etna_emit.c \
 	etna_fence.c \
 	etna_pipe.c \
 	etna_rasterizer.c \
