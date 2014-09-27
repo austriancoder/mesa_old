@@ -12,6 +12,7 @@ C_SOURCES := etna_asm.c \
 	etna_shader.c \
 	etna_surface.c \
 	etna_texture.c \
+	etna_tiling.c \
 	etna_transfer.c \
 	etna_zsa.c
 
