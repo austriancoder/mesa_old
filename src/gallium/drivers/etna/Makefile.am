@@ -29,6 +29,6 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/src/gallium/drivers \
 	-I$(top_srcdir)/include \
 	$(GALLIUM_CFLAGS) \
-	$(NOUVEAU_CFLAGS)
+	$(ETNA_CFLAGS)
 
 libetna_la_SOURCES = $(C_SOURCES) $(CPP_SOURCES)

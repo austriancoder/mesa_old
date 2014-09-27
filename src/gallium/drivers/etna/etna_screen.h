@@ -23,6 +23,7 @@
 #ifndef ETNA_SCREEN_H_
 #define ETNA_SCREEN_H_
 
+#include <etnaviv_drmif.h>
 #include "etna_internal.h"
 
 #include "pipe/p_screen.h"

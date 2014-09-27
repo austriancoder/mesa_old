@@ -72,6 +72,7 @@ LIBDRM_INTEL_REQUIRED=2.4.60
 LIBDRM_NVVIEUX_REQUIRED=2.4.33
 LIBDRM_NOUVEAU_REQUIRED="2.4.33 libdrm >= 2.4.41"
 LIBDRM_FREEDRENO_REQUIRED=2.4.57
+LIBDRM_ETNA_REQUIRED=2.4.39	# TODO
 DRI2PROTO_REQUIRED=2.6
 DRI3PROTO_REQUIRED=1.0
 PRESENTPROTO_REQUIRED=1.0
@@ -1721,9 +1722,6 @@ AC_SUBST([LLVM_INCLUDEDIR])
 AC_SUBST([LLVM_VERSION])
 AC_SUBST([CLANG_RESOURCE_DIR])
 
-AC_SUBST([ETNA_LIBS])
-AC_SUBST([ETNA_CFLAGS])
-
 case "x$enable_opengl$enable_gles1$enable_gles2" in
 x*yes*)
     EGL_CLIENT_APIS="$EGL_CLIENT_APIS "'$(GL_LIB)'
@@ -2148,10 +2146,10 @@ if test -n "$with_gallium_drivers"; then
             ;;
         xetna)
             HAVE_GALLIUM_ETNA=yes
-            #PKG_CHECK_MODULES([FREEDRENO], [libdrm_freedreno >= $LIBDRM_FREEDRENO_REQUIRED])
-            #gallium_require_drm_loader
+            PKG_CHECK_MODULES([ETNA], [libdrm_etnaviv >= $LIBDRM_ETNA_REQUIRED])
+            gallium_require_drm_loader
             GALLIUM_DRIVERS_DIRS="$GALLIUM_DRIVERS_DIRS etna"
-            #gallium_check_st "freedreno/drm" "dri-freedreno" "" "" "" ""
+            gallium_check_st "etna/drm" "dri-etna" "" "" "" ""
             ;;
         xswrast)
             HAVE_GALLIUM_SOFTPIPE=yes
