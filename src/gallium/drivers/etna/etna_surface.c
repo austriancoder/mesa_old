@@ -103,7 +103,7 @@ static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                 .dither = {0xffffffff, 0xffffffff},
                 .width = 16,
                 .height = etna_align_up(surf->surf.ts_size/0x40, 4),
-                .clear_value = {priv->specs.ts_clear_value},
+                .clear_value = {screen->specs.ts_clear_value},
                 .clear_mode = VIVS_RS_CLEAR_CONTROL_MODE_ENABLED1,
                 .clear_bits = 0xffff
             });
