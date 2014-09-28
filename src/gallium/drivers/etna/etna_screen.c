@@ -616,13 +616,13 @@ etna_screen_create(struct etna_device *dev)
 
     screen->dev = dev;
 
+    etna_set_debug_flags(getenv("ETNA_DEBUG"));
+
     screen->pipe = etna_pipe_new(screen->dev, ETNA_PIPE_3D);
     if (!screen->pipe) {
         DBG("could not create 3d pipe");
         goto fail;
     }
-
-    etna_set_debug_flags(getenv("ETNA_DEBUG"));
 
     if (etna_pipe_get_param(screen->pipe, ETNA_GPU_MODEL, &val)) {
         DBG("could not get ETNA_GPU_MODEL");
