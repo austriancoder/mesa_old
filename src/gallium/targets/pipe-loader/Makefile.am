@@ -174,6 +174,20 @@ pipe_msm_la_LIBADD = \
 
 endif
 
+if HAVE_GALLIUM_ETNA
+pipe_LTLIBRARIES += pipe_etnaviv.la
+
+pipe_etnaviv_la_SOURCES = pipe_etnaviv.c
+nodist_EXTRA_pipe_etnaviv_la_SOURCES = dummy.cpp
+pipe_etnaviv_la_LIBADD = \
+	$(PIPE_LIBS) \
+	$(top_builddir)/src/gallium/winsys/etna/drm/libetnadrm.la \
+	$(top_builddir)/src/gallium/drivers/etna/libetna.la \
+	$(LIBDRM_LIBS) \
+	$(ETNA_LIBS)
+
+endif
+
 if HAVE_GALLIUM_SVGA
 pipe_LTLIBRARIES += pipe_vmwgfx.la
 
