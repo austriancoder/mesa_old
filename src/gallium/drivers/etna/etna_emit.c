@@ -72,9 +72,9 @@ void etna_submit_rs_state(struct etna_context *restrict ctx, const struct compil
         etna_cmd_stream_reserve(stream, 22);
         /*0 */ etna_emit_load_state(stream, VIVS_RS_CONFIG>>2, 5, 0);
         /*1 */ etna_cmd_stream_emit(stream, cs->RS_CONFIG);
-        /*2 */ etna_emit_reloc(stream, &cs->RS_SOURCE[0]);
+        /*2 */ etna_emit_reloc(stream, &cs->RS_SOURCE);
         /*3 */ etna_cmd_stream_emit(stream, cs->RS_SOURCE_STRIDE);
-        /*4 */ etna_emit_reloc(stream, &cs->RS_DEST[0]);
+        /*4 */ etna_emit_reloc(stream, &cs->RS_DEST);
         /*5 */ etna_cmd_stream_emit(stream, cs->RS_DEST_STRIDE);
         /*6 */ etna_emit_load_state(stream, VIVS_RS_WINDOW_SIZE>>2, 1, 0);
         /*7 */ etna_cmd_stream_emit(stream, cs->RS_WINDOW_SIZE);

@@ -49,17 +49,13 @@ void etna_compile_rs_state(struct etna_screen *restrict screen, struct compiled_
                             ((rs->dest_tiling&1)?VIVS_RS_CONFIG_DEST_TILED:0) |
                             ((rs->swap_rb)?VIVS_RS_CONFIG_SWAP_RB:0) |
                             ((rs->flip)?VIVS_RS_CONFIG_FLIP:0));
-#if 0 /* TODO */
-    SET_STATE(RS_SOURCE_ADDR, rs->source[0]);
-    SET_STATE(RS_PIPE_SOURCE_ADDR[0], rs->source[0]);
-#endif
+    SET_STATE(RS_SOURCE, rs->source[0]);
+    SET_STATE(RS_PIPE_SOURCE[0], rs->source[0]);
     SET_STATE(RS_SOURCE_STRIDE, (rs->source_stride << source_stride_shift) |
                             ((rs->source_tiling&2)?VIVS_RS_SOURCE_STRIDE_TILING:0) |
                             ((source_multi)?VIVS_RS_SOURCE_STRIDE_MULTI:0));
-#if 0 /* TODO */
-    SET_STATE(RS_DEST_ADDR, rs->dest[0]);
-    SET_STATE(RS_PIPE_DEST_ADDR[0], rs->dest[0]);
-#endif
+    SET_STATE(RS_DEST, rs->dest[0]);
+    SET_STATE(RS_PIPE_DEST[0], rs->dest[0]);
     SET_STATE(RS_DEST_STRIDE, (rs->dest_stride << dest_stride_shift) |
                             ((rs->dest_tiling&2)?VIVS_RS_DEST_STRIDE_TILING:0) |
                             ((dest_multi)?VIVS_RS_DEST_STRIDE_MULTI:0));
