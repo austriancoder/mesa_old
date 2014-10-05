@@ -56,8 +56,10 @@ void etna_stall(struct etna_cmd_stream *stream, uint32_t from, uint32_t to)
 
 static void etna_emit_reloc(struct etna_cmd_stream *restrict stream, const struct etna_reloc *reloc)
 {
-	etna_cmd_stream_emit(stream, 0xdeadbeef);
-	etna_cmd_stream_reloc(stream, reloc);
+	if (!reloc->bo)
+		etna_cmd_stream_emit(stream, 0x0);
+	else
+		etna_cmd_stream_reloc(stream, reloc);
 }
 
 /* submit RS state, without any processing and no dependence on context
