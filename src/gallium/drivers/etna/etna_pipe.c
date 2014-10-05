@@ -1312,6 +1312,12 @@ static void etna_pipe_set_polygon_stipple(struct pipe_context *pctx,
     /* NOP */
 }
 
+static void etna_flush_resource(struct pipe_context *pctx,
+		struct pipe_resource *resource)
+{
+    /* NOP */
+}
+
 struct pipe_context * etna_context_create(struct pipe_screen *pscreen, void *priv)
 {
     struct etna_context *ectx = CALLOC_STRUCT(etna_context);
@@ -1374,6 +1380,8 @@ struct pipe_context * etna_context_create(struct pipe_screen *pscreen, void *pri
     /* XXX set_compute_resources */
     /* XXX set_global_binding */
     /* XXX launch_grid */
+
+    pc->flush_resource = etna_flush_resource;
 
     etna_pipe_blend_init(pc);
     etna_pipe_rasterizer_init(pc);
