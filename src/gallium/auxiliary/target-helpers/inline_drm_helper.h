@@ -97,6 +97,17 @@ kms_swrast_create_screen(int fd)
 #endif
 
 #if defined(GALLIUM_ETNA)
+#if defined(DRI_TARGET)
+
+const __DRIextension **__driDriverGetExtensions_etnaviv(void);
+
+PUBLIC const __DRIextension **__driDriverGetExtensions_etnaviv(void)
+{
+   globalDriverAPI = &galliumdrm_driver_api;
+   return galliumdrm_driver_extensions;
+}
+#endif
+
 static struct pipe_screen *
 pipe_etna_create_screen(int fd)
 {
@@ -356,14 +367,9 @@ pipe_vc4_create_screen(int fd)
 inline struct pipe_screen *
 dd_create_screen(int fd)
 {
-#if defined(GALLIUM_ETNA)
-   return pipe_etna_create_screen(fd);
-#else
    driver_name = loader_get_driver_for_fd(fd, _LOADER_GALLIUM);
-#if !defined(GALLIUM_ETNA)
    if (!driver_name)
       return NULL;
-#endif
 
 #if defined(GALLIUM_I915)
    if (strcmp(driver_name, "i915") == 0)
@@ -414,6 +420,10 @@ dd_create_screen(int fd)
       return pipe_vc4_create_screen(fd);
 #endif
 #endif
+#if defined(GALLIUM_ETNA)
+   if (strcmp(driver_name, "etnaviv") == 0)
+      return pipe_etna_create_screen(fd);
+   else
 #endif
       return NULL;
 }
