@@ -78,6 +78,11 @@ etna_screen(struct pipe_screen *pscreen)
     return (struct etna_screen *)pscreen;
 }
 
+boolean etna_screen_bo_get_handle(struct pipe_screen *pscreen,
+	struct etna_bo *bo,
+	unsigned stride,
+	struct winsys_handle *whandle);
+
 struct pipe_screen *
 etna_screen_create(struct etna_device *dev);
 

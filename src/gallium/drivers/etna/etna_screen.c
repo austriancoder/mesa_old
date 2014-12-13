@@ -38,6 +38,8 @@
 
 #include <stdio.h>
 
+#include "state_tracker/drm_driver.h"
+
 uint32_t etna_mesa_debug = 0;
 
 /* Set debug flags from ETNA_DEBUG environment variable */
@@ -601,6 +603,22 @@ fail:
 	return false;
 }
 
+boolean etna_screen_bo_get_handle(struct pipe_screen *pscreen,
+	struct etna_bo *bo,
+	unsigned stride,
+	struct winsys_handle *whandle)
+{
+	whandle->stride = stride;
+
+	if (whandle->type == DRM_API_HANDLE_TYPE_SHARED) {
+		return etna_bo_get_name(bo, &whandle->handle) == 0;
+	} else if (whandle->type == DRM_API_HANDLE_TYPE_KMS) {
+		whandle->handle = etna_bo_handle(bo);
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
 
 struct pipe_screen *
 etna_screen_create(struct etna_device *dev)
