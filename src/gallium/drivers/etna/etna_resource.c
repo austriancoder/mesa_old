@@ -258,6 +258,16 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     return &resource->base;
 }
 
+static boolean etna_resource_get_handle(struct pipe_screen *screen,
+    struct pipe_resource *resource,
+    struct winsys_handle *handle)
+{
+    struct etna_resource *rsc = etna_resource(resource);
+
+    return etna_screen_bo_get_handle(screen, rsc->bo, 0 /* TODO */,
+                handle);
+}
+
 static void etna_screen_resource_destroy(struct pipe_screen *screen,
                         struct pipe_resource *resource_)
 {
@@ -289,7 +299,7 @@ void etna_screen_resource_init(struct pipe_screen *pscreen)
     pscreen->can_create_resource = etna_screen_can_create_resource;
     pscreen->resource_create = etna_screen_resource_create;
     pscreen->resource_from_handle = etna_screen_resource_from_handle;
-    pscreen->resource_get_handle = u_default_resource_get_handle;
+    pscreen->resource_get_handle = etna_resource_get_handle;
     pscreen->resource_destroy = etna_screen_resource_destroy;
 }
 
