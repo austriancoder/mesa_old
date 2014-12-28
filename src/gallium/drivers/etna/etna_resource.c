@@ -59,7 +59,7 @@ bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resou
 
     DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocating tile status of size %i", resource, rt_ts_size);
     struct etna_bo *rt_ts = 0;
-    if(unlikely((rt_ts = etna_bo_new(priv->dev, rt_ts_size, 0 /* TODO FLAGS*/)) == NULL))
+    if(unlikely((rt_ts = etna_bo_new(priv->dev, rt_ts_size, DRM_ETNA_GEM_CACHE_UNCACHED/* TODO FLAGS*/)) == NULL))
     {
         BUG("Problem allocating tile status for resource");
         return false;
@@ -211,11 +211,18 @@ static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *sc
     }
 
     /* determine memory type */
-    uint32_t flags = 0; /* XXX DRM_ETNA_GEM_CACHE_xxx */
-    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i), %i layers, of format %s, size %08x flags %08x",
+    uint32_t flags = 0x0;
+
+    /* TODO: DRM_ETNA_GEM_CACHE_UNCACHED may not be the best for performance */
+    if (templat->bind & PIPE_BIND_RENDER_TARGET)
+        flags = DRM_ETNA_GEM_TYPE_SCANOUT;
+    else
+        flags = DRM_ETNA_GEM_CACHE_UNCACHED;
+
+    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i), %i layers, of format %s, size %08x flags %08x, etna flags %08x",
             resource,
             templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->array_size, util_format_name(templat->format),
-            offset, templat->bind);
+            offset, templat->bind, flags);
 
     struct etna_bo *bo = 0;
     if(unlikely((bo = etna_bo_new(priv->dev, offset, flags)) == NULL))
