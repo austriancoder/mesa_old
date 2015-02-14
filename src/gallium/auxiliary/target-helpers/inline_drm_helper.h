@@ -515,7 +515,7 @@ dd_configuration(enum drm_conf conf)
 #endif
 #endif
 #if defined(GALLIUM_ETNA)
-   if (strcmp(driver_name, "etna") == 0)
+   if (strcmp(driver_name, "etnaviv") == 0)
       return configuration_query(conf);
 #endif
       return NULL;
