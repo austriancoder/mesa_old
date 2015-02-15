@@ -620,6 +620,33 @@ boolean etna_screen_bo_get_handle(struct pipe_screen *pscreen,
 	}
 }
 
+struct etna_bo *
+etna_screen_bo_from_handle(struct pipe_screen *pscreen,
+		struct winsys_handle *whandle,
+		unsigned *out_stride)
+{
+	struct etna_screen *screen = etna_screen(pscreen);
+	struct etna_bo *bo;
+
+	if (whandle->type == DRM_API_HANDLE_TYPE_SHARED) {
+		bo = etna_bo_from_name(screen->dev, whandle->handle);
+	} else if (whandle->type == DRM_API_HANDLE_TYPE_FD) {
+		bo = etna_bo_from_dmabuf(screen->dev, whandle->handle);
+	} else {
+		DBG("Attempt to import unsupported handle type %d", whandle->type);
+		return NULL;
+	}
+
+	if (!bo) {
+		DBG("ref name 0x%08x failed", whandle->handle);
+		return NULL;
+	}
+
+	*out_stride = whandle->stride;
+
+	return bo;
+}
+
 struct pipe_screen *
 etna_screen_create(struct etna_device *dev)
 {
