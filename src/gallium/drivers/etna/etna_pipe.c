@@ -97,15 +97,19 @@ static void reset_context(struct pipe_context *restrict pipe)
     struct etna_context *restrict e = etna_context(pipe);
     struct etna_cmd_stream *restrict stream = e->stream;
     struct etna_screen *restrict screen = etna_screen(pipe->screen);
+    struct etna_coalesce coalesce;
 
 #define EMIT_STATE(state_name, dest_field) \
-    ETNA_COALESCE_STATE_UPDATE(state_name, e->gpu3d.dest_field, 0)
+    etna_coalsence_emit(stream, &coalesce, VIVS_##state_name, e->gpu3d.dest_field)
 
 #define EMIT_STATE_FIXP(state_name, dest_field) \
-    ETNA_COALESCE_STATE_UPDATE(state_name, e->gpu3d.dest_field, 1)
+    etna_coalsence_emit_fixp(stream, &coalesce, VIVS_##state_name, e->gpu3d.dest_field)
 
-    uint32_t last_reg, last_fixp, span_start;
-    ETNA_COALESCE_STATE_OPEN(ETNA_3D_CONTEXT_SIZE);
+#define EMIT_STATE_RELOC(state_name, dest_field) \
+    etna_coalsence_emit_reloc(stream, &coalesce, VIVS_##state_name, &e->gpu3d.dest_field)
+
+    etna_coalesce_start(stream, &coalesce, ETNA_3D_CONTEXT_SIZE);
+
     /* multi sample config is set first, and outside of the normal sorting
      * order, as changing the multisample state clobbers PS.INPUT_COUNT (and
      * possibly PS.TEMP_REGISTER_CONTROL).
@@ -198,7 +202,7 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*0140C*/ EMIT_STATE(PE_DEPTH_NORMALIZE, PE_DEPTH_NORMALIZE);
     if (screen->specs.pixel_pipes == 1)
     {
-        /*01410*/ EMIT_STATE(PE_DEPTH_ADDR, PE_DEPTH_ADDR);
+        /*01410*/ EMIT_STATE_RELOC(PE_DEPTH_ADDR, PE_DEPTH_ADDR);
     }
     /*01414*/ EMIT_STATE(PE_DEPTH_STRIDE, PE_DEPTH_STRIDE);
     /*01418*/ EMIT_STATE(PE_STENCIL_OP, PE_STENCIL_OP);
@@ -209,7 +213,7 @@ static void reset_context(struct pipe_context *restrict pipe)
     /*0142C*/ EMIT_STATE(PE_COLOR_FORMAT, PE_COLOR_FORMAT);
     if (screen->specs.pixel_pipes == 1)
     {
-        /*01430*/ EMIT_STATE(PE_COLOR_ADDR, PE_COLOR_ADDR);
+        /*01430*/ EMIT_STATE_RELOC(PE_COLOR_ADDR, PE_COLOR_ADDR);
     }
     /*01434*/ EMIT_STATE(PE_COLOR_STRIDE, PE_COLOR_STRIDE);
     /*01454*/ EMIT_STATE(PE_HDEPTH_CONTROL, PE_HDEPTH_CONTROL);
@@ -217,11 +221,11 @@ static void reset_context(struct pipe_context *restrict pipe)
     {
         for(int x=0; x<screen->specs.pixel_pipes; ++x)
         {
-            /*01460*/ EMIT_STATE(PE_PIPE_COLOR_ADDR(x), PE_PIPE_COLOR_ADDR[x]);
+            /*01460*/ EMIT_STATE_RELOC(PE_PIPE_COLOR_ADDR(x), PE_PIPE_COLOR_ADDR[x]);
         }
         for(int x=0; x<screen->specs.pixel_pipes; ++x)
         {
-            /*01480*/ EMIT_STATE(PE_PIPE_DEPTH_ADDR(x), PE_PIPE_DEPTH_ADDR[x]);
+            /*01480*/ EMIT_STATE_RELOC(PE_PIPE_DEPTH_ADDR(x), PE_PIPE_DEPTH_ADDR[x]);
         }
     }
     /*014A0*/ EMIT_STATE(PE_STENCIL_CONFIG_EXT, PE_STENCIL_CONFIG_EXT);
@@ -231,11 +235,11 @@ static void reset_context(struct pipe_context *restrict pipe)
         /*014A8*/ EMIT_STATE(PE_DITHER(x), PE_DITHER[x]);
     }
     /*01654*/ EMIT_STATE(TS_MEM_CONFIG, TS_MEM_CONFIG);
-    /*01658*/ EMIT_STATE(TS_COLOR_STATUS_BASE, TS_COLOR_STATUS_BASE);
-    /*0165C*/ EMIT_STATE(TS_COLOR_SURFACE_BASE, TS_COLOR_SURFACE_BASE);
+    /*01658*/ EMIT_STATE_RELOC(TS_COLOR_STATUS_BASE, TS_COLOR_STATUS_BASE);
+    /*0165C*/ EMIT_STATE_RELOC(TS_COLOR_SURFACE_BASE, TS_COLOR_SURFACE_BASE);
     /*01660*/ EMIT_STATE(TS_COLOR_CLEAR_VALUE, TS_COLOR_CLEAR_VALUE);
-    /*01664*/ EMIT_STATE(TS_DEPTH_STATUS_BASE, TS_DEPTH_STATUS_BASE);
-    /*01668*/ EMIT_STATE(TS_DEPTH_SURFACE_BASE, TS_DEPTH_SURFACE_BASE);
+    /*01664*/ EMIT_STATE_RELOC(TS_DEPTH_STATUS_BASE, TS_DEPTH_STATUS_BASE);
+    /*01668*/ EMIT_STATE_RELOC(TS_DEPTH_SURFACE_BASE, TS_DEPTH_SURFACE_BASE);
     /*0166C*/ EMIT_STATE(TS_DEPTH_CLEAR_VALUE, TS_DEPTH_CLEAR_VALUE);
     for(int x=0; x<12; ++x)
     {
@@ -272,7 +276,7 @@ static void reset_context(struct pipe_context *restrict pipe)
         /*03828*/ EMIT_STATE(GL_VARYING_COMPONENT_USE(x), GL_VARYING_COMPONENT_USE[x]);
     }
     /*0384C*/ EMIT_STATE(GL_API_MODE, GL_API_MODE);
-    ETNA_COALESCE_STATE_CLOSE();
+    etna_coalesce_end(stream, &coalesce);
     /* end only EMIT_STATE */
 #undef EMIT_STATE
 #undef EMIT_STATE_FIXP
@@ -292,8 +296,10 @@ static void reset_context(struct pipe_context *restrict pipe)
 static void sync_context(struct pipe_context *restrict pipe)
 {
     struct etna_context *restrict e = etna_context(pipe);
-    struct etna_screen *restrict screen = etna_screen(pipe->screen);
+#if 0
+   struct etna_screen *restrict screen = etna_screen(pipe->screen);
     struct etna_cmd_stream *restrict stream = e->stream;
+    struct etna_coalesce coalesce;
     uint32_t active_samplers = active_samplers_bits(pipe);
     uint32_t dirty = e->dirty_bits;
 
@@ -355,13 +361,13 @@ static void sync_context(struct pipe_context *restrict pipe)
      */
 #define EMIT_STATE(state_name, dest_field, src_value) \
     if(e->gpu3d.dest_field != (src_value)) { \
-        ETNA_COALESCE_STATE_UPDATE(state_name, src_value, 0) \
+        etna_coalsence_emit(stream, &coalesce, VIVS_##state_name, src_value); \
         e->gpu3d.dest_field = (src_value); \
     }
 
 #define EMIT_STATE_FIXP(state_name, dest_field, src_value) \
     if(e->gpu3d.dest_field != (src_value)) { \
-        ETNA_COALESCE_STATE_UPDATE(state_name, src_value, 1) \
+        etna_coalsence_emit_fixp(stream, &coalesce, VIVS_##state_name, src_value); \
         e->gpu3d.dest_field = (src_value); \
     }
 
@@ -401,8 +407,7 @@ static void sync_context(struct pipe_context *restrict pipe)
      * - move update of GL_MULTI_SAMPLE_CONFIG first
      * - add unlikely()/likely()
      */
-    uint32_t last_reg, last_fixp, span_start;
-    ETNA_COALESCE_STATE_OPEN(ETNA_3D_CONTEXT_SIZE);
+    etna_coalesce_start(stream, &coalesce, ETNA_3D_CONTEXT_SIZE);
     /* begin only EMIT_STATE -- make sure no new etna_reserve calls are done here directly
      *    or indirectly */
     /* multi sample config is set first, and outside of the normal sorting
@@ -715,7 +720,7 @@ static void sync_context(struct pipe_context *restrict pipe)
             /*03828*/ EMIT_STATE(GL_VARYING_COMPONENT_USE(x), GL_VARYING_COMPONENT_USE[x], e->shader_state.GL_VARYING_COMPONENT_USE[x]);
         }
     }
-    ETNA_COALESCE_STATE_CLOSE();
+    etna_coalesce_end(stream, &coalesce);
     /* end only EMIT_STATE */
     /**** Large dynamically-sized state ****/
     if(dirty & (ETNA_STATE_SHADER))
@@ -744,27 +749,27 @@ static void sync_context(struct pipe_context *restrict pipe)
         /* If new uniforms loaded with current shader, only submit what changed */
         if(dirty & (ETNA_STATE_VS_UNIFORMS))
         {
-            ETNA_COALESCE_STATE_OPEN(e->shader_state.vs_uniforms_size); /* worst case */
+            etna_coalesce_start(stream, &coalesce, e->shader_state.vs_uniforms_size); /* worst case */
             for(int x=0; x<e->shader_state.vs_uniforms_size; ++x)
             {
                 /*05000*/ EMIT_STATE(VS_UNIFORMS(x), VS_UNIFORMS[x], e->shader_state.VS_UNIFORMS[x]);
             }
-            ETNA_COALESCE_STATE_CLOSE();
+            etna_coalesce_end(stream, &coalesce);
         }
         if(dirty & (ETNA_STATE_PS_UNIFORMS))
         {
-            ETNA_COALESCE_STATE_OPEN(e->shader_state.ps_uniforms_size); /* worst case */
+            etna_coalesce_start(stream, &coalesce, e->shader_state.ps_uniforms_size); /* worst case */
             for(int x=0; x<e->shader_state.ps_uniforms_size; ++x)
             {
                 /*07000*/ EMIT_STATE(PS_UNIFORMS(x), PS_UNIFORMS[x], e->shader_state.PS_UNIFORMS[x]);
             }
-            ETNA_COALESCE_STATE_CLOSE();
+            etna_coalesce_end(stream, &coalesce);
         }
     }
     /**** End of state update ****/
 #undef EMIT_STATE
 #undef EMIT_STATE_FIXP
-
+#endif
     e->dirty_bits = 0;
 }
 

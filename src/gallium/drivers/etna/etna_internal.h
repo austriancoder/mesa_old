@@ -366,7 +366,7 @@ struct etna_3d_state
     uint32_t /*01404*/ PE_DEPTH_NEAR;
     uint32_t /*01408*/ PE_DEPTH_FAR;
     uint32_t /*0140C*/ PE_DEPTH_NORMALIZE;
-    uint32_t /*01410*/ PE_DEPTH_ADDR;
+    struct etna_reloc /*01410*/ PE_DEPTH_ADDR;
     uint32_t /*01414*/ PE_DEPTH_STRIDE;
     uint32_t /*01418*/ PE_STENCIL_OP;
     uint32_t /*0141C*/ PE_STENCIL_CONFIG;
@@ -374,7 +374,7 @@ struct etna_3d_state
     uint32_t /*01424*/ PE_ALPHA_BLEND_COLOR;
     uint32_t /*01428*/ PE_ALPHA_CONFIG;
     uint32_t /*0142C*/ PE_COLOR_FORMAT;
-    uint32_t /*01430*/ PE_COLOR_ADDR;
+    struct etna_reloc /*01430*/ PE_COLOR_ADDR;
     uint32_t /*01434*/ PE_COLOR_STRIDE;
     uint32_t /*01454*/ PE_HDEPTH_CONTROL;
     uint32_t /*014A0*/ PE_STENCIL_CONFIG_EXT;
@@ -387,8 +387,8 @@ struct etna_3d_state
     struct etna_reloc /*01658*/ TS_COLOR_STATUS_BASE;
     struct etna_reloc /*0165C*/ TS_COLOR_SURFACE_BASE;
     uint32_t /*01660*/ TS_COLOR_CLEAR_VALUE;
-    uint32_t /*01664*/ TS_DEPTH_STATUS_BASE;
-    uint32_t /*01668*/ TS_DEPTH_SURFACE_BASE;
+    struct etna_reloc /*01664*/ TS_DEPTH_STATUS_BASE;
+    struct etna_reloc /*01668*/ TS_DEPTH_SURFACE_BASE;
     uint32_t /*0166C*/ TS_DEPTH_CLEAR_VALUE;
 
     uint32_t /*02000*/ TE_SAMPLER_CONFIG0[VIVS_TE_SAMPLER__LEN];

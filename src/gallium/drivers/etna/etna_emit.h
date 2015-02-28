@@ -95,19 +95,13 @@ static inline void etna_draw_indexed_primitives(struct etna_cmd_stream *stream, 
  * state updates into single SET_STATE commands when possible.
  *
  * Usage:
- * - Set state words with ETNA_COALESCE_STATE_UPDATE.
+ * - Set state words with etna_coalsence_update.
  *
- * - Before starting the state update, reserve space using EMIT_STATE_OPEN(max_updates),
+ * - Before starting the state update, reserve space using etna_coalesce_start(..),
  *   where max_updates is the maximum number of possible updates that will be emitted between
  *   this ETNA_COALESCE_STATE_OPEN .. ETNA_COALESCE_STATE_CLOSE pair.
  *
- * - When done with updating, call ETNA_COALESCE_STATE_CLOSE.
- *
- * In the scope where these macros are used, define the variables
- *     uint32_t last_reg,  -> last register to write to
- *       last_fixp,   -> fixp conversion flag for last written register
- *       span_start   -> start of span in command buffer
- * for state tracking.
+ * - When done with updating, call etna_coalesce_end(..).
  *
  * It works by keeping track of the last register that was written to plus one,
  * thus the next register that will be written. If the register number to be written
@@ -115,14 +109,21 @@ static inline void etna_draw_indexed_primitives(struct etna_cmd_stream *stream, 
  * and open a new one.
  */
 
-/* TODO */
-#define ETNA_COALESCE_STATE_OPEN(max_updates) \
-		span_start = 0; last_fixp = 0; last_reg = 0;
+struct etna_coalesce
+{
+    uint32_t start;
+    uint32_t last_reg;
+    uint32_t last_fixp;
+};
 
-#define ETNA_COALESCE_STATE_CLOSE() \
-		span_start = span_start; last_fixp = last_fixp; last_reg = last_reg;
-
-#define ETNA_COALESCE_STATE_UPDATE(state_name, src_value, fixp) \
-		etna_emit_load_state(stream, (VIVS_##state_name) >> 2, 1, (fixp));
+void etna_coalesce_start(struct etna_cmd_stream *stream, struct etna_coalesce *coalesce,
+        uint32_t max);
+void etna_coalsence_emit(struct etna_cmd_stream *stream, struct etna_coalesce *coalesce,
+        uint32_t reg, uint32_t value);
+void etna_coalsence_emit_fixp(struct etna_cmd_stream *stream, struct etna_coalesce *coalesce,
+        uint32_t reg, uint32_t value);
+void etna_coalsence_emit_reloc(struct etna_cmd_stream *stream, struct etna_coalesce *coalesce,
+        uint32_t reg, const struct etna_reloc *r);
+void etna_coalesce_end(struct etna_cmd_stream *stream, struct etna_coalesce *coalesce);
 
 #endif
