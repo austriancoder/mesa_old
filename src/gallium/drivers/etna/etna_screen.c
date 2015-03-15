@@ -436,7 +436,8 @@ static boolean etna_screen_is_video_format_supported( struct pipe_screen *screen
 static void etna_screen_flush_frontbuffer( struct pipe_screen *screen,
                           struct pipe_resource *resource,
                           unsigned level, unsigned layer,
-                          void *winsys_drawable_handle )
+                          void *winsys_drawable_handle,
+                          struct pipe_box *subbox)
 {
     struct etna_rs_target *drawable = (struct etna_rs_target *)winsys_drawable_handle;
     struct etna_resource *rt_resource = etna_resource(resource);
