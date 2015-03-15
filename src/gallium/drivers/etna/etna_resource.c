@@ -95,6 +95,32 @@ static boolean etna_screen_can_create_resource(struct pipe_screen *pscreen,
     return true;
 }
 
+static void etna_screen_resource_destroy(struct pipe_screen *screen,
+                        struct pipe_resource *resource_)
+{
+    struct etna_resource *resource = etna_resource(resource_);
+    if(resource == NULL)
+        return;
+#if 0 /* TODO */
+    struct etna_queue *queue = NULL;
+    if(resource->last_ctx != NULL)
+    {
+        /* XXX This could fail when multiple contexts share this resource,
+         * (the last one to bind it will "own" it) or fail miserably if
+         * the context was since destroyed.
+         * Integrate this into etna_bo_del...
+         */
+        DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: resource queued destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
+        queue = resource->last_ctx->ctx->queue;
+    } else {
+        DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: resource destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
+    }
+#endif
+    etna_bo_del(resource->bo);
+    etna_bo_del(resource->ts_bo);
+    FREE(resource);
+}
+
 static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_screen *screen,
                                               const struct pipe_resource *templat,
                                               struct winsys_handle *handle)
@@ -273,32 +299,6 @@ static boolean etna_resource_get_handle(struct pipe_screen *screen,
 
     return etna_screen_bo_get_handle(screen, rsc->bo, 0 /* TODO */,
                 handle);
-}
-
-static void etna_screen_resource_destroy(struct pipe_screen *screen,
-                        struct pipe_resource *resource_)
-{
-    struct etna_resource *resource = etna_resource(resource_);
-    if(resource == NULL)
-        return;
-#if 0 /* TODO */
-    struct etna_queue *queue = NULL;
-    if(resource->last_ctx != NULL)
-    {
-        /* XXX This could fail when multiple contexts share this resource,
-         * (the last one to bind it will "own" it) or fail miserably if
-         * the context was since destroyed.
-         * Integrate this into etna_bo_del...
-         */
-        DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: resource queued destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
-        queue = resource->last_ctx->ctx->queue;
-    } else {
-        DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: resource destroyed (%ix%ix%i)", resource, resource_->width0, resource_->height0, resource_->depth0);
-    }
-#endif
-    etna_bo_del(resource->bo);
-    etna_bo_del(resource->ts_bo);
-    FREE(resource);
 }
 
 void etna_screen_resource_init(struct pipe_screen *pscreen)
