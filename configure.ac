@@ -2147,9 +2147,8 @@ if test -n "$with_gallium_drivers"; then
         xetnaviv)
             HAVE_GALLIUM_ETNAVIV=yes
             PKG_CHECK_MODULES([ETNAVIV], [libdrm_etnaviv >= $LIBDRM_ETNAVIV_REQUIRED])
+            gallium_require_drm "etnaviv"
             gallium_require_drm_loader
-            GALLIUM_DRIVERS_DIRS="$GALLIUM_DRIVERS_DIRS etnaviv"
-            gallium_check_st "etna/drm" "dri-etna" "" "" "" ""
             ;;
         xswrast)
             HAVE_GALLIUM_SOFTPIPE=yes
