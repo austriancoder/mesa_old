@@ -174,7 +174,7 @@ pipe_msm_la_LIBADD = \
 
 endif
 
-if HAVE_GALLIUM_ETNA
+if HAVE_GALLIUM_ETNAVIV
 pipe_LTLIBRARIES += pipe_etnaviv.la
 
 pipe_etnaviv_la_SOURCES = pipe_etnaviv.c
@@ -184,7 +184,7 @@ pipe_etnaviv_la_LIBADD = \
 	$(top_builddir)/src/gallium/winsys/etna/drm/libetnadrm.la \
 	$(top_builddir)/src/gallium/drivers/etna/libetna.la \
 	$(LIBDRM_LIBS) \
-	$(ETNA_LIBS)
+	$(ETNAVIV_LIBS)
 
 endif
 

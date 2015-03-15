@@ -59,8 +59,8 @@
 #include "vc4/drm/vc4_drm_public.h"
 #endif
 
-#if GALLIUM_ETNA
-#include "etna/drm/etna_drm_public.h"
+#if GALLIUM_ETNAVIV
+#include "etnaviv/drm/etnaviv_drm_public.h"
 #endif
 
 static char* driver_name = NULL;
@@ -96,7 +96,7 @@ kms_swrast_create_screen(int fd)
 #endif
 #endif
 
-#if defined(GALLIUM_ETNA)
+#if defined(GALLIUM_ETNAVIV)
 #if defined(DRI_TARGET)
 
 const __DRIextension **__driDriverGetExtensions_etnaviv(void);
@@ -420,7 +420,7 @@ dd_create_screen(int fd)
       return pipe_vc4_create_screen(fd);
 #endif
 #endif
-#if defined(GALLIUM_ETNA)
+#if defined(GALLIUM_ETNAVIV)
    if (strcmp(driver_name, "etnaviv") == 0)
       return pipe_etna_create_screen(fd);
    else
@@ -514,7 +514,7 @@ dd_configuration(enum drm_conf conf)
    else
 #endif
 #endif
-#if defined(GALLIUM_ETNA)
+#if defined(GALLIUM_ETNAVIV)
    if (strcmp(driver_name, "etnaviv") == 0)
       return configuration_query(conf);
 #endif
