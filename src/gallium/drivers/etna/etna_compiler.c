@@ -885,8 +885,7 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_SEQ:
             case TGSI_OPCODE_SGT:
             case TGSI_OPCODE_SLE:
-            case TGSI_OPCODE_SNE:
-            case TGSI_OPCODE_STR: {
+            case TGSI_OPCODE_SNE: {
                 uint cond = 0;
                 switch(inst->Instruction.Opcode)
                 {
@@ -896,7 +895,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                 case TGSI_OPCODE_SGT: cond = INST_CONDITION_GT; break;
                 case TGSI_OPCODE_SLE: cond = INST_CONDITION_LE; break;
                 case TGSI_OPCODE_SNE: cond = INST_CONDITION_NE; break;
-                case TGSI_OPCODE_STR: cond = INST_CONDITION_TRUE; break;
                 }
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_SET,
@@ -1151,8 +1149,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_PK2US:
             case TGSI_OPCODE_PK4B:
             case TGSI_OPCODE_PK4UB:
-            case TGSI_OPCODE_RFL:
-            case TGSI_OPCODE_RCC:
             case TGSI_OPCODE_DPH: /* src0.x * src1.x + src0.y * src1.y + src0.z * src1.z + src1.w */
             case TGSI_OPCODE_POW: /* lowered by mesa to ex2(y*lg2(x)) */
             case TGSI_OPCODE_XPD:
@@ -1160,8 +1156,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_CLAMP:
             case TGSI_OPCODE_DP2A:
             case TGSI_OPCODE_LRP: /* lowered by mesa to (op2 * (1.0f - op0)) + (op1 * op0) */
-            case TGSI_OPCODE_CND:
-            case TGSI_OPCODE_SFL: /* SET to 0 */
             case TGSI_OPCODE_DST: /* XXX INST_OPCODE_DST */
             case TGSI_OPCODE_DP2: /* Either MUL+MAD or DP3 with a zeroed channel, but we don't have a 'zero' swizzle */
             case TGSI_OPCODE_EXP:
@@ -1172,11 +1166,8 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_UP2US:
             case TGSI_OPCODE_UP4B:
             case TGSI_OPCODE_UP4UB:
-            case TGSI_OPCODE_X2D:
             case TGSI_OPCODE_ARL: /* floor */
             case TGSI_OPCODE_ARR: /* round */
-            case TGSI_OPCODE_ARA: /* to be removed according to doc */
-            case TGSI_OPCODE_BRA: /* to be removed according to doc */
             case TGSI_OPCODE_CAL: /* XXX INST_OPCODE_CALL */
             case TGSI_OPCODE_RET: /* XXX INST_OPCODE_RET */
             case TGSI_OPCODE_BRK: /* break from loop */
