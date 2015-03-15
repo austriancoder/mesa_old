@@ -29,6 +29,8 @@
 #include "etna_fence.h"
 #include "etna_resource.h"
 
+#include "os/os_time.h"
+
 #include "util/u_memory.h"
 #include "util/u_format.h"
 #include "util/u_transfer.h"
@@ -213,8 +215,9 @@ static int etna_screen_get_param( struct pipe_screen *screen, enum pipe_cap para
     /* Timer queries. */
     case PIPE_CAP_QUERY_TIME_ELAPSED:
     case PIPE_CAP_OCCLUSION_QUERY:
-    case PIPE_CAP_QUERY_TIMESTAMP:
             return 0;
+    case PIPE_CAP_QUERY_TIMESTAMP:
+            return 1;
     case PIPE_CAP_QUERY_PIPELINE_STATISTICS:
             return 0;
 
@@ -343,8 +346,7 @@ static int etna_screen_get_compute_param(struct pipe_screen *screen,
 
 static uint64_t etna_screen_get_timestamp(struct pipe_screen *screen)
 {
-    DBG("unimplemented etna_screen_get_timestamp");
-    return 0;
+    return os_time_get_nano();
 }
 
 static boolean etna_screen_is_format_supported( struct pipe_screen *screen,
