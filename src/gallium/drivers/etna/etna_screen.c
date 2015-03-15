@@ -327,23 +327,6 @@ static int etna_screen_get_shader_param( struct pipe_screen *screen, unsigned sh
     return 0;
 }
 
-static int etna_screen_get_video_param( struct pipe_screen *screen,
-                       enum pipe_video_profile profile,
-                       enum pipe_video_entrypoint entrypoint,
-                       enum pipe_video_cap param )
-{
-    DBG("unimplemented etna_screen_get_video_param");
-    return 0;
-}
-
-static int etna_screen_get_compute_param(struct pipe_screen *screen,
-                        enum pipe_compute_cap param,
-                        void *ret)
-{
-    DBG("unimplemented etna_screen_get_compute_param");
-    return 0;
-}
-
 static uint64_t etna_screen_get_timestamp(struct pipe_screen *screen)
 {
     return os_time_get_nano();
@@ -724,8 +707,6 @@ etna_screen_create(struct etna_device *dev)
     pscreen->get_param = etna_screen_get_param;
     pscreen->get_paramf = etna_screen_get_paramf;
     pscreen->get_shader_param = etna_screen_get_shader_param;
-    pscreen->get_video_param = etna_screen_get_video_param;
-    pscreen->get_compute_param = etna_screen_get_compute_param;
     pscreen->get_timestamp = etna_screen_get_timestamp;
     pscreen->context_create = etna_context_create;
     pscreen->is_format_supported = etna_screen_is_format_supported;
