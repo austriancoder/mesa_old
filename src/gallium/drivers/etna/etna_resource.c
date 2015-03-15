@@ -78,7 +78,7 @@ bool etna_screen_resource_alloc_ts(struct pipe_screen *screen, struct etna_resou
 }
 
 
-static boolean etna_screen_can_create_resource(struct pipe_screen *pscreen,
+static boolean etna_can_create_resource(struct pipe_screen *pscreen,
                               const struct pipe_resource *templat)
 {
     struct etna_screen *screen = etna_screen(pscreen);
@@ -95,7 +95,7 @@ static boolean etna_screen_can_create_resource(struct pipe_screen *pscreen,
     return true;
 }
 
-static void etna_screen_resource_destroy(struct pipe_screen *screen,
+static void etna_resource_destroy(struct pipe_screen *screen,
                         struct pipe_resource *resource_)
 {
     struct etna_resource *resource = etna_resource(resource_);
@@ -121,17 +121,17 @@ static void etna_screen_resource_destroy(struct pipe_screen *screen,
     FREE(resource);
 }
 
-static struct pipe_resource * etna_screen_resource_from_handle(struct pipe_screen *screen,
+static struct pipe_resource * etna_resource_from_handle(struct pipe_screen *screen,
                                               const struct pipe_resource *templat,
                                               struct winsys_handle *handle)
 {
-    DBG("unimplemented etna_screen_resource_from_handle");
+    DBG("unimplemented etna_resource_from_handle");
     return NULL;
 }
 
 /* Allocate 2D texture or render target resource
  */
-static struct pipe_resource * etna_screen_resource_create(struct pipe_screen *screen,
+static struct pipe_resource * etna_resource_create(struct pipe_screen *screen,
                                          const struct pipe_resource *templat)
 {
     struct etna_screen *priv = etna_screen(screen);
@@ -303,10 +303,10 @@ static boolean etna_resource_get_handle(struct pipe_screen *screen,
 
 void etna_screen_resource_init(struct pipe_screen *pscreen)
 {
-    pscreen->can_create_resource = etna_screen_can_create_resource;
-    pscreen->resource_create = etna_screen_resource_create;
-    pscreen->resource_from_handle = etna_screen_resource_from_handle;
+    pscreen->can_create_resource = etna_can_create_resource;
+    pscreen->resource_create = etna_resource_create;
+    pscreen->resource_from_handle = etna_resource_from_handle;
     pscreen->resource_get_handle = etna_resource_get_handle;
-    pscreen->resource_destroy = etna_screen_resource_destroy;
+    pscreen->resource_destroy = etna_resource_destroy;
 }
 
