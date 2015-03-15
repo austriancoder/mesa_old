@@ -121,11 +121,38 @@ static void etna_resource_destroy(struct pipe_screen *screen,
     FREE(resource);
 }
 
-static struct pipe_resource * etna_resource_from_handle(struct pipe_screen *screen,
-                                              const struct pipe_resource *templat,
+static struct pipe_resource * etna_resource_from_handle(struct pipe_screen *pscreen,
+                                              const struct pipe_resource *tmpl,
                                               struct winsys_handle *handle)
 {
-    DBG("unimplemented etna_resource_from_handle");
+    struct etna_resource *rsc = CALLOC_STRUCT(etna_resource);
+    struct pipe_resource *prsc;
+    unsigned tmp; /* TODO */
+
+    DBG("target=%d, format=%s, %ux%ux%u, array_size=%u, last_level=%u, "
+        "nr_samples=%u, usage=%u, bind=%x, flags=%x",
+         tmpl->target, util_format_name(tmpl->format),
+         tmpl->width0, tmpl->height0, tmpl->depth0,
+         tmpl->array_size, tmpl->last_level, tmpl->nr_samples,
+         tmpl->usage, tmpl->bind, tmpl->flags);
+
+    if (!rsc)
+        return NULL;
+
+    prsc = &rsc->base;
+    *prsc = *tmpl;
+
+    pipe_reference_init(&prsc->reference, 1);
+    prsc->screen = pscreen;
+
+    rsc->bo = etna_screen_bo_from_handle(pscreen, handle, &tmp);
+    if (!rsc->bo)
+        goto fail;
+
+    return prsc;
+
+fail:
+    etna_resource_destroy(pscreen, prsc);
     return NULL;
 }
 
