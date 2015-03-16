@@ -1272,38 +1272,18 @@ static void etna_pipe_set_index_buffer( struct pipe_context *pipe,
 }
 
 static void etna_pipe_flush(struct pipe_context *pipe,
-             struct pipe_fence_handle **fence_out,
+             struct pipe_fence_handle **fence,
              enum pipe_flush_flags flags)
 {
-    struct etna_context *priv = etna_context(pipe);
+    struct etna_context *ctx = etna_context(pipe);
 
-#if 0
-
-    uint32_t _fence_tmp; /* just pass through fence, though we have to convert the type... */
-    uint32_t *fence_in = (fence_out == NULL) ? NULL : (&_fence_tmp);
-    if(etna_flush(priv->ctx, fence_in) != ETNA_OK)
-    {
-        BUG("Error: etna_flush failed, GPU may be in unpredictable state");
-    }
-    if(fence_out)
-        *fence_out = ETNA_FENCE_TO_PIPE_HANDLE(*fence_in);
-
-    if(DBG_ENABLED(ETNA_DBG_FINISH_ALL))
-    {
-        if(etna_finish(priv->ctx) != ETNA_OK)
-        {
-            BUG("Error: etna_finish failed, GPU may be in unpredictable state");
-            abort();
-        }
-    }
-#endif
-
-    /* TODO: check if we really need to flush */
+    if (fence)
+        *fence = etna_fence_create(pipe);
 
     if (DBG_ENABLED(ETNA_DBG_FINISH_ALL))
-        etna_cmd_stream_finish(priv->stream);
+        etna_cmd_stream_finish(ctx->stream);
     else
-        etna_cmd_stream_flush(priv->stream);
+        etna_cmd_stream_flush(ctx->stream);
 }
 
 static void etna_pipe_set_clip_state(struct pipe_context *pipe, const struct pipe_clip_state *pcs)

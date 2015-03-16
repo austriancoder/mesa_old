@@ -24,13 +24,9 @@
 #ifndef H_ETNAVIV_FENCE
 #define H_ETNAVIV_FENCE
 
-#include "pipe/p_state.h"
+#include "pipe/p_context.h"
 
-struct pipe_screen;
-
-#define ETNA_FENCE_TO_PIPE_HANDLE(fence) ((struct pipe_fence_handle *)(fence))
-#define PIPE_HANDLE_TO_ETNA_FENCE(fence) ((uint32_t)(fence))
-
+struct pipe_fence_handle *etna_fence_create(struct pipe_context *pctx);
 void etna_screen_fence_init(struct pipe_screen *screen);
 
 #endif

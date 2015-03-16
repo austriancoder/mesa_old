@@ -1,51 +1,64 @@
 #include "etnaviv_fence.h"
-#include "etnaviv_debug.h"
-#include "etnaviv_screen.h"
+#include "etnaviv_pipe.h"
 #include "util/u_memory.h"
 #include "util/u_inlines.h"
-#include "util/u_string.h"
 
-/**
- * Reference or unreference a fence. This is pretty much a no-op.
- */
-static void etna_screen_fence_reference(struct pipe_screen *screen_h,
-                        struct pipe_fence_handle **ptr_h,
-                        struct pipe_fence_handle *fence_h)
+struct pipe_fence_handle {
+    struct pipe_reference reference;
+    struct etna_context *ctx;
+    uint32_t timestamp;
+};
+
+static void etna_screen_fence_reference(struct pipe_screen *screen,
+                        struct pipe_fence_handle **ptr,
+                        struct pipe_fence_handle *fence)
 {
-    *ptr_h = fence_h;
+    if (pipe_reference(&(*ptr)->reference, &fence->reference))
+        FREE(*ptr);
+
+    *ptr = fence;
 }
 
-/**
- * Wait until the fence has been signalled for the specified timeout in nanoseconds,
- * or PIPE_TIMEOUT_INFINITE.
- */
-static boolean etna_screen_fence_finish(struct pipe_screen *screen_h,
-                        struct pipe_fence_handle *fence_h,
+static boolean etna_screen_fence_signalled(struct pipe_screen *screen,
+                           struct pipe_fence_handle *fence)
+{
+    uint32_t timestamp = etna_cmd_stream_timestamp(fence->ctx->stream);
+
+    /* TODO util helper for compare w/ rollover? */
+    return timestamp >= fence->timestamp;
+}
+
+static boolean etna_screen_fence_finish(struct pipe_screen *screen,
+                        struct pipe_fence_handle *fence,
                         uint64_t timeout )
 {
-#if 0 /* TODO */
-    struct etna_screen *screen = etna_screen(screen_h);
-    uint32_t fence = PIPE_HANDLE_TO_ETNA_FENCE(fence_h);
-    int rv;
-    /* nanoseconds to milliseconds */
-    rv = viv_fence_finish(screen->dev, fence,
-            timeout == PIPE_TIMEOUT_INFINITE ? VIV_WAIT_INDEFINITE : (timeout / 1000000ULL));
-    if(rv != VIV_STATUS_OK && rv != VIV_STATUS_TIMEOUT)
-    {
-        BUG("error waiting for fence %08x", fence);
-    }
-    return (rv != VIV_STATUS_TIMEOUT);
-#endif
+    struct etna_pipe *pipe = etna_screen(fence->ctx->base.screen)->pipe;
+    uint32_t ms = timeout / 1000000ULL;
+
+    if (timeout == PIPE_TIMEOUT_INFINITE)
+        ms = 0;
+
+    if (etna_pipe_wait(pipe, fence->timestamp, ms))
+        return false;
+
     return true;
 }
 
-/**
- * Poll whether the fence has been signalled.
- */
-static boolean etna_screen_fence_signalled(struct pipe_screen *screen_h,
-                           struct pipe_fence_handle *fence_h)
+struct pipe_fence_handle *etna_fence_create(struct pipe_context *pctx)
 {
-    return etna_screen_fence_finish(screen_h, fence_h, 0);
+    struct pipe_fence_handle *fence;
+    struct etna_context *ctx = etna_context(pctx);
+
+    fence = CALLOC_STRUCT(pipe_fence_handle);
+    if (!fence)
+        return NULL;
+
+    pipe_reference_init(&fence->reference, 1);
+
+    fence->ctx = ctx;
+    fence->timestamp = etna_cmd_stream_timestamp(ctx->stream);
+
+    return fence;
 }
 
 void etna_screen_fence_init(struct pipe_screen *pscreen)
