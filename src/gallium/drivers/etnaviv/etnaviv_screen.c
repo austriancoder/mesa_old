@@ -39,6 +39,7 @@
 #include "util/u_string.h"
 
 #include <stdio.h>
+#include <fcntl.h>
 
 #include "state_tracker/drm_driver.h"
 
@@ -83,6 +84,9 @@ static void etna_set_debug_flags(const char *str)
 static void etna_screen_destroy(struct pipe_screen *pscreen)
 {
 	struct etna_screen *screen = etna_screen(pscreen);
+
+	if (screen->drm_fd)
+		close(screen->drm_fd);
 
 	if (screen->pipe)
 		etna_pipe_del(screen->pipe);
@@ -648,6 +652,12 @@ etna_screen_create(struct etna_device *dev)
     screen->dev = dev;
 
     etna_set_debug_flags(getenv("ETNA_DEBUG"));
+
+    screen->drm_fd = open(getenv("ETNA_DRM_DEV"), O_RDWR);
+    if (screen->drm_fd < 0) {
+        DBG("could not open drm device");
+        goto fail;
+    }
 
     screen->pipe = etna_pipe_new(screen->dev, ETNA_PIPE_3D);
     if (!screen->pipe) {

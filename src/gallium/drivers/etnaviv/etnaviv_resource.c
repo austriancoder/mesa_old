@@ -35,6 +35,8 @@
 #include "util/u_inlines.h"
 #include "util/u_transfer.h" /* u_default_resource_get_handle */
 
+#include "state_tracker/drm_driver.h"
+
 /* Associate an resource with this context when it is bound in any way
  * (vertex buffer, index buffer, texture, surface, blit).
  */
@@ -251,25 +253,51 @@ static struct pipe_resource * etna_resource_create(struct pipe_screen *screen,
         ix += 1;
     }
 
-    /* determine memory type */
-    uint32_t flags = 0x0;
-
-    /* TODO: DRM_ETNA_GEM_CACHE_UNCACHED may not be the best for performance */
-    if (templat->bind & PIPE_BIND_RENDER_TARGET)
-        flags = DRM_ETNA_GEM_TYPE_SCANOUT;
-    else
-        flags = DRM_ETNA_GEM_CACHE_UNCACHED;
-
-    DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i), %i layers, of format %s, size %08x flags %08x, etna flags %08x",
-            resource,
-            templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->array_size, util_format_name(templat->format),
-            offset, templat->bind, flags);
-
     struct etna_bo *bo = 0;
-    if(unlikely((bo = etna_bo_new(priv->dev, offset, flags)) == NULL))
+
+    /* import scanout buffers for display */
+    if (templat->bind & PIPE_BIND_RENDER_TARGET)
     {
-        BUG("Problem allocating video memory for resource");
-        return NULL;
+        struct drm_mode_create_dumb create_req;
+        struct winsys_handle handle;
+        int fd, ret;
+        unsigned tmp;
+
+        create_req.bpp = 32;
+        create_req.width = resource->levels[0].padded_width;
+        create_req.height = resource->levels[0].padded_height;
+        create_req.handle = 0;
+
+        ret = drmIoctl(priv->drm_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_req);
+        if (ret) {
+            printf("failed to create dump buffer");
+        }
+
+        ret = drmPrimeHandleToFD(priv->drm_fd, create_req.handle, 0, &fd);
+        if (ret) {
+            printf("failed to export bo: %m\n");
+        }
+
+        handle.type = DRM_API_HANDLE_TYPE_FD;
+        handle.handle = fd;
+
+        bo = etna_screen_bo_from_handle(screen, &handle, &tmp);
+    }
+    else
+    {
+        uint32_t flags = DRM_ETNA_GEM_CACHE_UNCACHED;
+
+        DBG_F(ETNA_DBG_RESOURCE_MSGS, "%p: Allocate surface of %ix%i (padded to %ix%i), %i layers, of format %s, size %08x flags %08x, etna flags %08x",
+                resource,
+                templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->array_size, util_format_name(templat->format),
+                offset, templat->bind, flags);
+
+        struct etna_bo *bo = 0;
+        if(unlikely((bo = etna_bo_new(priv->dev, offset, flags)) == NULL))
+        {
+            BUG("Problem allocating video memory for resource");
+            return NULL;
+        }
     }
 
     resource->base = *templat;

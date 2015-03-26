@@ -56,6 +56,8 @@ struct etna_screen {
     uint32_t revision;
     uint32_t features[5];
 
+    int drm_fd;
+
     struct etna_pipe_specs specs;
 };
 
