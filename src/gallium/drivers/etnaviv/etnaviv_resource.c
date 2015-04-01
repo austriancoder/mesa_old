@@ -282,6 +282,11 @@ static struct pipe_resource * etna_resource_create(struct pipe_screen *screen,
         handle.handle = fd;
 
         bo = etna_screen_bo_from_handle(screen, &handle, &tmp);
+        if(unlikely(bo == NULL))
+        {
+            BUG("Problem allocating dumb buffer for scanout");
+            return NULL;
+        }
     }
     else
     {
