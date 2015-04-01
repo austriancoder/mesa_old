@@ -292,7 +292,6 @@ static struct pipe_resource * etna_resource_create(struct pipe_screen *screen,
                 templat->width0, templat->height0, resource->levels[0].padded_width, resource->levels[0].padded_height, templat->array_size, util_format_name(templat->format),
                 offset, templat->bind, flags);
 
-        struct etna_bo *bo = 0;
         if(unlikely((bo = etna_bo_new(priv->dev, offset, flags)) == NULL))
         {
             BUG("Problem allocating video memory for resource");
