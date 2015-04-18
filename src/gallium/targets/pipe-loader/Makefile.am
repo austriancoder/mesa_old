@@ -181,8 +181,8 @@ pipe_etnaviv_la_SOURCES = pipe_etnaviv.c
 nodist_EXTRA_pipe_etnaviv_la_SOURCES = dummy.cpp
 pipe_etnaviv_la_LIBADD = \
 	$(PIPE_LIBS) \
-	$(top_builddir)/src/gallium/winsys/etna/drm/libetnadrm.la \
-	$(top_builddir)/src/gallium/drivers/etna/libetna.la \
+	$(top_builddir)/src/gallium/winsys/etnaviv/drm/libetnavivdrm.la \
+	$(top_builddir)/src/gallium/drivers/etnaviv/libetnaviv.la \
 	$(LIBDRM_LIBS) \
 	$(ETNAVIV_LIBS)
 

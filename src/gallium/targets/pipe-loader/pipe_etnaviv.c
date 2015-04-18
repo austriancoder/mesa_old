@@ -1,7 +1,7 @@
 
 #include "target-helpers/inline_debug_helper.h"
 #include "state_tracker/drm_driver.h"
-#include "etna/drm/etna_drm_public.h"
+#include "etnaviv/drm/etnaviv_drm_public.h"
 
 static struct pipe_screen *
 create_screen(int fd)
