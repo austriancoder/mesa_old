@@ -28,6 +28,7 @@ noinst_LTLIBRARIES = libetnaviv.la
 AM_CPPFLAGS = \
 	-I$(top_srcdir)/src/gallium/drivers \
 	-I$(top_srcdir)/include \
+	-I$(top_builddir)/src/glsl/nir \
 	$(GALLIUM_CFLAGS) \
 	$(ETNAVIV_CFLAGS)
 
@@ -41,6 +42,8 @@ etnaviv_compiler_SOURCES = \
 etnaviv_compiler_LDADD = \
 	libetnaviv.la \
 	../../auxiliary/libgallium.la \
+	$(top_builddir)/src/glsl/libnir.la \
+	$(top_builddir)/src/libglsl_util.la \
 	$(top_builddir)/src/util/libmesautil.la \
 	$(GALLIUM_COMMON_LIB_DEPS) \
 	$(ETNAVIV_LIBS)

@@ -147,3 +147,11 @@ int main(int argc, char **argv)
 	etna_dump_shader_object(shader_obj);
 	etna_destroy_shader_object(shader_obj);
 }
+
+void _mesa_error_no_memory(const char *caller);
+
+void
+_mesa_error_no_memory(const char *caller)
+{
+	fprintf(stderr, "Mesa error: out of memory in %s", caller);
+}
