@@ -840,6 +840,35 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[2] = convert_src(cd, &inst->Src[1], INST_SWIZ_IDENTITY),
                         });
                 break;
+            case TGSI_OPCODE_DP2: {
+                struct etna_native_reg temp = etna_compile_get_inner_temp(cd);
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_MUL,
+                        .sat = 0,
+                        .dst.use = 1,
+                        .dst.comps = INST_COMPS_X | INST_COMPS_Y, /* temp.xy */
+                        .dst.reg = temp.id,
+                        .src[0] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
+                        .src[1] = convert_src(cd, &inst->Src[1], INST_SWIZ_IDENTITY),
+                        });
+                emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_ADD,
+                        .sat = 0,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[0].use = 1, /* temp.xxxx */
+                        .src[0].swiz = INST_SWIZ_BROADCAST(0),
+                        .src[0].neg = 0,
+                        .src[0].abs = 0,
+                        .src[0].rgroup = temp.rgroup,
+                        .src[0].reg = temp.id,
+                        .src[2].use = 1, /* temp.yyyy */
+                        .src[2].swiz = INST_SWIZ_BROADCAST(1),
+                        .src[2].neg = 0,
+                        .src[2].abs = 0,
+                        .src[2].rgroup = temp.rgroup,
+                        .src[2].reg = temp.id,
+                        });
+               } break;
             case TGSI_OPCODE_DP3:
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_DP3,
@@ -1157,7 +1186,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_DP2A:
             case TGSI_OPCODE_LRP: /* lowered by mesa to (op2 * (1.0f - op0)) + (op1 * op0) */
             case TGSI_OPCODE_DST: /* XXX INST_OPCODE_DST */
-            case TGSI_OPCODE_DP2: /* Either MUL+MAD or DP3 with a zeroed channel, but we don't have a 'zero' swizzle */
             case TGSI_OPCODE_EXP:
             case TGSI_OPCODE_LOG:
             case TGSI_OPCODE_TXB: /* XXX INST_OPCODE_TEXLDB */
