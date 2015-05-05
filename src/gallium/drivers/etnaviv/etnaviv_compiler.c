@@ -1149,6 +1149,35 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[1].reg = temp.id,
                         });
                } break;
+            case TGSI_OPCODE_LRP: {
+               struct etna_native_reg temp = etna_compile_get_inner_temp(cd);
+               struct etna_inst_src src = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY);
+               src.neg = 1;
+               emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_MAD,
+                        .sat = 0,
+                        .dst.use = 1,
+                        .dst.comps = INST_COMPS_X | INST_COMPS_Y |
+                                     INST_COMPS_Z | INST_COMPS_W, /* tmp.xyzw */
+                        .dst.reg = temp.id,
+                        .src[0] = src,
+                        .src[1] = convert_src(cd, &inst->Src[2], INST_SWIZ_IDENTITY),
+                        .src[2] = convert_src(cd, &inst->Src[2], INST_SWIZ_IDENTITY),
+                        });
+               emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_MAD,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[0] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
+                        .src[1] = convert_src(cd, &inst->Src[1], INST_SWIZ_IDENTITY),
+                        .src[2].use = 1, /* tmp.xyzw */
+                        .src[2].swiz = INST_SWIZ_IDENTITY,
+                        .src[2].neg = 0,
+                        .src[2].abs = 0,
+                        .src[2].rgroup = temp.rgroup,
+                        .src[2].reg = temp.id,
+                        });
+               } break;
             case TGSI_OPCODE_CMP: /* componentwise dst = (src0 < 0) ? src1 : src2 */
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_SELECT,
@@ -1216,7 +1245,6 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
             case TGSI_OPCODE_ROUND:
             case TGSI_OPCODE_CLAMP:
             case TGSI_OPCODE_DP2A:
-            case TGSI_OPCODE_LRP: /* lowered by mesa to (op2 * (1.0f - op0)) + (op1 * op0) */
             case TGSI_OPCODE_DST: /* XXX INST_OPCODE_DST */
             case TGSI_OPCODE_EXP:
             case TGSI_OPCODE_LOG:
