@@ -1117,6 +1117,38 @@ static void etna_compile_pass_generate_code(struct etna_compile_data *cd, const 
                         .src[0].reg = temp.id,
                         });
                 } break;
+            case TGSI_OPCODE_TRUNC: {
+               struct etna_native_reg temp = etna_compile_get_inner_temp(cd);
+               struct etna_inst_src src;
+               emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_SIGN,
+                        .sat = 0,
+                        .dst.use = 1,
+                        .dst.comps = INST_COMPS_X | INST_COMPS_Y |
+                                     INST_COMPS_Z | INST_COMPS_W, /* tmp.xyzw */
+                        .dst.reg = temp.id,
+                        .src[2] = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY),
+                        });
+               src = convert_src(cd, &inst->Src[0], INST_SWIZ_IDENTITY);
+               src.abs = 1;
+               emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_FLOOR,
+                        .sat = sat,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[2] = src,
+                        });
+               emit_inst(cd, &(struct etna_inst) {
+                        .opcode = INST_OPCODE_MUL,
+                        .dst = convert_dst(cd, &inst->Dst[0]),
+                        .src[0] = convert_dst_to_src(cd, &inst->Dst[0]),
+                        .src[1].use = 1, /* tmp.xyzw */
+                        .src[1].swiz = INST_SWIZ_IDENTITY,
+                        .src[1].neg = 0,
+                        .src[1].abs = 0,
+                        .src[1].rgroup = temp.rgroup,
+                        .src[1].reg = temp.id,
+                        });
+               } break;
             case TGSI_OPCODE_CMP: /* componentwise dst = (src0 < 0) ? src1 : src2 */
                 emit_inst(cd, &(struct etna_inst) {
                         .opcode = INST_OPCODE_SELECT,
