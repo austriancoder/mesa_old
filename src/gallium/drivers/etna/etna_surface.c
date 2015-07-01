@@ -33,9 +33,9 @@
 #include "util/u_inlines.h"
 #include "util/u_memory.h"
 
-#include <etnaviv/common.xml.h>
-#include <etnaviv/state.xml.h>
-#include <etnaviv/state_3d.xml.h>
+#include "common.xml.h"
+#include "state.xml.h"
+#include "state_3d.xml.h"
 
 static struct pipe_surface *etna_pipe_create_surface(struct pipe_context *pipe,
                                       struct pipe_resource *resource_,

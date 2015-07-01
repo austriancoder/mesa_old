@@ -25,10 +25,10 @@
 #include "etna_pipe.h"
 #include "etna_translate.h"
 
-#include <etnaviv/common.xml.h>
-#include <etnaviv/state.xml.h>
-#include <etnaviv/state_3d.xml.h>
-#include <etnaviv/cmdstream.xml.h>
+#include "common.xml.h"
+#include "state.xml.h"
+#include "state_3d.xml.h"
+#include "cmdstream.xml.h"
 #include <etnaviv/viv.h>
 #include <etnaviv/etna.h>
 

@@ -34,9 +34,9 @@
 #include "util/u_memory.h"
 #include "util/u_surface.h"
 
-#include <etnaviv/common.xml.h>
-#include <etnaviv/state.xml.h>
-#include <etnaviv/state_3d.xml.h>
+#include "common.xml.h"
+#include "state.xml.h"
+#include "state_3d.xml.h"
 
 /* Save current state for blitter operation */
 static void etna_pipe_blit_save_state(struct pipe_context *pipe)

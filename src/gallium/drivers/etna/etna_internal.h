@@ -26,8 +26,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <etnaviv/state.xml.h>
-#include <etnaviv/state_3d.xml.h>
+#include "state.xml.h"
+#include "state_3d.xml.h"
 
 #define ETNA_NUM_INPUTS (16)
 #define ETNA_NUM_VARYINGS (16)

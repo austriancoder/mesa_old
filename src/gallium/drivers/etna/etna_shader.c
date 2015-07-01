@@ -31,7 +31,7 @@
 #include "util/u_memory.h"
 #include "util/u_math.h"
 
-#include <etnaviv/state_3d.xml.h>
+#include "state_3d.xml.h"
 
 /* Fetch uniforms from user buffer, if bound, and mark respective uniform
  * bank as dirty. */

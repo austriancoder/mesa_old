@@ -30,9 +30,9 @@
 #include "pipe/p_state.h"
 #include "util/u_memory.h"
 
-#include <etnaviv/common.xml.h>
-#include <etnaviv/state.xml.h>
-#include <etnaviv/state_3d.xml.h>
+#include "common.xml.h"
+#include "state.xml.h"
+#include "state_3d.xml.h"
 
 static void *etna_pipe_create_blend_state(struct pipe_context *pipe,
                             const struct pipe_blend_state *bs)

@@ -31,9 +31,9 @@
 #include "util/u_inlines.h"
 #include "util/u_memory.h"
 
-#include <etnaviv/common.xml.h>
-#include <etnaviv/state.xml.h>
-#include <etnaviv/state_3d.xml.h>
+#include "common.xml.h"
+#include "state.xml.h"
+#include "state_3d.xml.h"
 
 static void *etna_pipe_create_sampler_state(struct pipe_context *pipe,
                               const struct pipe_sampler_state *ss)

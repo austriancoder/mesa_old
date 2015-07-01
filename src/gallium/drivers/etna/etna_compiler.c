@@ -58,8 +58,8 @@
 
 #include <etnaviv/etna.h>
 #include <etnaviv/etna_util.h>
-#include <etnaviv/isa.xml.h>
-#include <etnaviv/state_3d.xml.h>
+#include "isa.xml.h"
+#include "state_3d.xml.h"
 
 #include <stdio.h>
 #include <sys/types.h>
